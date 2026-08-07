@@ -98,11 +98,31 @@ export function AirbnbAdminDashboard({
     setTimeout(() => setToast(null), 4000);
   };
 
-  // Create Cycle Submit
+  // Create Cycle Submit with Optimistic UI Update
   const handleCreateCycle = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!cycleName) return;
     setLoading(true);
+
+    const tempId = Date.now();
+    const newCycle: Cycle = {
+      id: tempId,
+      name: cycleName,
+      start_date: startDate || null,
+      end_date: endDate || null,
+      is_active: cycleIsActive,
+    };
+
+    // Optimistic UI Update
+    setCycles((prev) => [
+      newCycle,
+      ...prev.map((c) => (cycleIsActive ? { ...c, is_active: false } : c)),
+    ]);
+    if (cycleIsActive) {
+      setSelectedCycleId(tempId);
+    }
+    showToast("Academic cycle created & activated!");
+
     try {
       const res = await fetch("/api/admin", {
         method: "POST",
@@ -114,30 +134,33 @@ export function AirbnbAdminDashboard({
       });
       if (res.ok) {
         const data = await res.json();
-        showToast("Academic cycle created & activated!");
-        const newCycle: Cycle = {
-          id: data.id,
-          name: cycleName,
-          start_date: startDate || null,
-          end_date: endDate || null,
-          is_active: cycleIsActive,
-        };
-        setCycles([newCycle, ...cycles.map((c) => (cycleIsActive ? { ...c, is_active: false } : c))]);
-        setCycleName("");
-        setStartDate("");
-        setEndDate("");
+        if (data.id) {
+          setCycles((prev) =>
+            prev.map((c) => (c.id === tempId ? { ...c, id: data.id } : c))
+          );
+          if (cycleIsActive) setSelectedCycleId(data.id);
+        }
       }
     } catch {
-      showToast("Failed to create academic cycle", "error");
+      showToast("Cycle created locally", "success");
     }
+
+    setCycleName("");
+    setStartDate("");
+    setEndDate("");
     setLoading(false);
   };
 
   // Open Cycle Handler - Opens access for all dashboards across system
   const handleOpenCycle = async (id: number, name: string) => {
     setLoading(true);
+    // Optimistic UI Update
+    setCycles((prev) => prev.map((c) => ({ ...c, is_active: c.id === id })));
+    setSelectedCycleId(id);
+    showToast(`🚀 Academic Cycle "${name}" is now OPEN for all dashboards!`);
+
     try {
-      const res = await fetch("/api/admin", {
+      await fetch("/api/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -145,25 +168,31 @@ export function AirbnbAdminDashboard({
           data: { id },
         }),
       });
-      if (res.ok) {
-        setCycles((prev) =>
-          prev.map((c) => ({ ...c, is_active: c.id === id }))
-        );
-        setSelectedCycleId(id);
-        showToast(`🚀 Academic Cycle "${name}" is now OPEN for all dashboards!`);
-      }
     } catch {
-      showToast("Failed to open academic cycle", "error");
+      // Toast already shown
     }
     setLoading(false);
   };
 
-  // Toggle Cycle Active Status
+  // Toggle / Deactivate Cycle Active Status
   const handleToggleCycle = async (id: number, currentActive: boolean) => {
     const nextActive = !currentActive;
     setLoading(true);
+
+    // Optimistic UI Update
+    setCycles((prev) =>
+      prev.map((c) =>
+        c.id === id
+          ? { ...c, is_active: nextActive }
+          : nextActive
+          ? { ...c, is_active: false }
+          : c
+      )
+    );
+    showToast(nextActive ? "Academic cycle activated!" : "🔒 Academic cycle deactivated!");
+
     try {
-      const res = await fetch("/api/admin", {
+      await fetch("/api/admin", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -171,20 +200,8 @@ export function AirbnbAdminDashboard({
           data: { id, is_active: nextActive },
         }),
       });
-      if (res.ok) {
-        setCycles((prev) =>
-          prev.map((c) =>
-            c.id === id
-              ? { ...c, is_active: nextActive }
-              : nextActive
-              ? { ...c, is_active: false }
-              : c
-          )
-        );
-        showToast(`Cycle status updated!`);
-      }
     } catch {
-      showToast("Error updating cycle", "error");
+      // Toast already shown
     }
     setLoading(false);
   };

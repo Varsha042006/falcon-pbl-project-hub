@@ -95,11 +95,17 @@ export function AirbnbCoordinatorDashboard({
   // Per-row section selection state
   const [rowSelections, setRowSelections] = useState<Record<number, number>>({});
 
-  // Criteria form state
+  // Criteria form & editing state
   const [criteria, setCriteria] = useState<RubricCriteria[]>(initialCriteria);
   const [newCriteriaName, setNewCriteriaName] = useState("");
   const [newCriteriaWeightage, setNewCriteriaWeightage] = useState(10);
   const [newCriteriaMaxMarks, setNewCriteriaMaxMarks] = useState(10);
+
+  // Inline Criteria Edit state
+  const [editingIndex, setEditingIndex] = useState<number | null>(null);
+  const [editName, setEditName] = useState("");
+  const [editWeightage, setEditWeightage] = useState(10);
+  const [editMaxMarks, setEditMaxMarks] = useState(10);
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
@@ -180,17 +186,99 @@ export function AirbnbCoordinatorDashboard({
     }
   };
 
-  const handleAddCriteria = (e: React.FormEvent) => {
+  // Add New Criteria Handler
+  const handleAddCriteria = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!newCriteriaName) return;
+
     const newItem: RubricCriteria = {
       name: newCriteriaName,
       weightage: newCriteriaWeightage,
       max_marks: newCriteriaMaxMarks,
     };
-    setCriteria([...criteria, newItem]);
+
+    setCriteria((prev) => [...prev, newItem]);
     setNewCriteriaName("");
-    showToast(`Added criteria "${newCriteriaName}" to evaluation rubric!`);
+    showToast(`Added criteria "${newCriteriaName}" (${newCriteriaWeightage}%, ${newCriteriaMaxMarks} Marks)!`);
+
+    try {
+      const res = await fetch("/api/coordinator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "ADD_CRITERIA",
+          data: newItem,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.id) {
+          setCriteria((prev) =>
+            prev.map((c, i) => (i === prev.length - 1 ? { ...c, id: data.id } : c))
+          );
+        }
+      }
+    } catch {
+      // Toast already shown
+    }
+  };
+
+  // Start Edit Mode for Row
+  const handleStartEdit = (idx: number, item: RubricCriteria) => {
+    setEditingIndex(idx);
+    setEditName(item.name);
+    setEditWeightage(item.weightage);
+    setEditMaxMarks(item.max_marks);
+  };
+
+  // Save Edit Mode for Row
+  const handleSaveEdit = async (idx: number) => {
+    if (!editName) return;
+
+    const targetItem = criteria[idx];
+
+    const updatedItem: RubricCriteria = {
+      ...targetItem,
+      name: editName,
+      weightage: editWeightage,
+      max_marks: editMaxMarks,
+    };
+
+    setCriteria((prev) => prev.map((item, i) => (i === idx ? updatedItem : item)));
+    setEditingIndex(null);
+    showToast(`Updated criteria "${editName}" (${editWeightage}%, ${editMaxMarks} Marks)!`);
+
+    try {
+      await fetch("/api/coordinator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "UPDATE_CRITERIA",
+          data: updatedItem,
+        }),
+      });
+    } catch {
+      // Toast already shown
+    }
+  };
+
+  // Delete Criteria Row
+  const handleDeleteCriteria = async (idx: number, item: RubricCriteria) => {
+    setCriteria((prev) => prev.filter((_, i) => i !== idx));
+    showToast(`Deleted criteria "${item.name}"`);
+
+    try {
+      await fetch("/api/coordinator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "DELETE_CRITERIA",
+          data: { id: item.id },
+        }),
+      });
+    } catch {
+      // Toast already shown
+    }
   };
 
   const filteredSupervisors = assignments.filter(
@@ -333,7 +421,7 @@ export function AirbnbCoordinatorDashboard({
             <div className="airbnb-card stat-card" onClick={() => setCurrentView("rubricsCreator")} style={{ cursor: "pointer" }}>
               <div className="stat-icon">📊</div>
               <div className="stat-value">{rubrics.length || 1}</div>
-              <div className="stat-label">Evaluation Rubrics (Click to Edit)</div>
+              <div className="stat-label">Evaluation Rubrics (Click to Edit Criteria)</div>
             </div>
 
             <div className="airbnb-card stat-card highlight-card" onClick={() => setCurrentView("auditLogs")} style={{ cursor: "pointer" }}>
@@ -555,10 +643,10 @@ export function AirbnbCoordinatorDashboard({
               ← Back to Dashboard
             </button>
             <h1 className="full-page-title">📊 Evaluation Rubrics & Criteria Creator</h1>
-            <p className="full-page-desc">Define predefined evaluation criteria, weightages, and max marks visible to supervisors & students.</p>
+            <p className="full-page-desc">Define, edit, and update criteria names, weightages (%), and max marks visible to supervisors & students.</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "400px 1fr", gap: "24px" }}>
+          <div style={{ display: "grid", gridTemplateColumns: "380px 1fr", gap: "24px" }}>
             {/* Add Criteria Form */}
             <div className="airbnb-card">
               <h2 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "18px" }}>➕ Add New Criteria</h2>
@@ -601,12 +689,12 @@ export function AirbnbCoordinatorDashboard({
               </form>
             </div>
 
-            {/* Existing Rubrics Table */}
+            {/* Editable Rubrics Criteria Table */}
             <div className="airbnb-card">
               <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
                 <h2 style={{ fontSize: "18px", fontWeight: 800, margin: 0 }}>Standard PBL Evaluation Rubric</h2>
                 <span className="legend-item" style={{ background: totalWeightage === 100 ? "#e7f7ef" : "#fff8e6", color: totalWeightage === 100 ? "#0f8a5f" : "#b7791f", fontWeight: 800 }}>
-                  Total Weightage: {totalWeightage}% {totalWeightage === 100 ? "✔ Verified" : ""}
+                  Total Weightage: {totalWeightage}% {totalWeightage === 100 ? "✔ Verified (100%)" : "⚠️ Adjust to 100%"}
                 </span>
               </div>
 
@@ -616,23 +704,104 @@ export function AirbnbCoordinatorDashboard({
                     <tr>
                       <th>#</th>
                       <th>Evaluation Criteria Name</th>
-                      <th>Weightage</th>
-                      <th>Max Marks</th>
+                      <th style={{ width: "130px" }}>Weightage (%)</th>
+                      <th style={{ width: "130px" }}>Max Marks</th>
+                      <th style={{ width: "160px", textAlign: "right" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {criteria.map((c, idx) => (
-                      <tr key={idx}>
-                        <td><strong>#{idx + 1}</strong></td>
-                        <td><strong>{c.name}</strong></td>
-                        <td>
-                          <span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2" }}>
-                            {c.weightage}%
-                          </span>
-                        </td>
-                        <td>{c.max_marks} Marks</td>
-                      </tr>
-                    ))}
+                    {criteria.map((c, idx) => {
+                      const isEditing = editingIndex === idx;
+
+                      return (
+                        <tr key={idx}>
+                          <td><strong>#{idx + 1}</strong></td>
+                          <td>
+                            {isEditing ? (
+                              <input
+                                type="text"
+                                value={editName}
+                                onChange={(e) => setEditName(e.target.value)}
+                                style={{ padding: "6px 10px", fontSize: "14px", borderRadius: "8px", border: "1px solid var(--airbnb-coral)", width: "100%" }}
+                              />
+                            ) : (
+                              <strong>{c.name}</strong>
+                            )}
+                          </td>
+                          <td>
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={editWeightage}
+                                onChange={(e) => setEditWeightage(Number(e.target.value))}
+                                style={{ padding: "6px 10px", fontSize: "14px", borderRadius: "8px", border: "1px solid var(--airbnb-coral)", width: "80px" }}
+                              />
+                            ) : (
+                              <span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2", fontSize: "13px", padding: "6px 12px" }}>
+                                {c.weightage}%
+                              </span>
+                            )}
+                          </td>
+                          <td>
+                            {isEditing ? (
+                              <input
+                                type="number"
+                                min="1"
+                                max="100"
+                                value={editMaxMarks}
+                                onChange={(e) => setEditMaxMarks(Number(e.target.value))}
+                                style={{ padding: "6px 10px", fontSize: "14px", borderRadius: "8px", border: "1px solid var(--airbnb-coral)", width: "80px" }}
+                              />
+                            ) : (
+                              <span>{c.max_marks} Marks</span>
+                            )}
+                          </td>
+                          <td style={{ textAlign: "right" }}>
+                            {isEditing ? (
+                              <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                                <button
+                                  type="button"
+                                  className="btn-primary-pill"
+                                  style={{ padding: "6px 12px", fontSize: "12px", background: "#10b981" }}
+                                  onClick={() => handleSaveEdit(idx)}
+                                >
+                                  💾 Save
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-secondary-pill"
+                                  style={{ padding: "6px 12px", fontSize: "12px" }}
+                                  onClick={() => setEditingIndex(null)}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                                <button
+                                  type="button"
+                                  className="btn-secondary-pill"
+                                  style={{ padding: "6px 12px", fontSize: "12px" }}
+                                  onClick={() => handleStartEdit(idx, c)}
+                                >
+                                  ✏️ Edit
+                                </button>
+                                <button
+                                  type="button"
+                                  className="btn-secondary-pill"
+                                  style={{ padding: "6px 12px", fontSize: "12px", background: "#ffebe9", color: "#c62828", borderColor: "#ffcdd2" }}
+                                  onClick={() => handleDeleteCriteria(idx, c)}
+                                >
+                                  🗑️ Delete
+                                </button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
                   </tbody>
                 </table>
               </div>

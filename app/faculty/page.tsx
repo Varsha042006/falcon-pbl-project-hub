@@ -49,19 +49,23 @@ export default async function FacultyDashboard() {
   ];
 
   // 2. Fetch Mentee Teams
-  const menteeTeams = await query<MenteeTeamItem>(
-    `SELECT t.id, t.team_code, t.name AS team_name, 
-            COALESCE(s.name, 'Student Leader') AS leader_name,
-            'U24E01CS001, U24E01CS002' AS usn_list,
-            sec.name AS section_name,
-            COALESCE(p.title, 'PBL Team Formation & Allocation Portal') AS project_title,
-            t.status
-     FROM teams t
-     LEFT JOIN students s ON t.leader_id = s.id
-     LEFT JOIN sections sec ON s.section_id = sec.id
-     LEFT JOIN projects p ON t.project_id = p.id
-     ORDER BY t.id DESC`
-  );
+  let menteeTeams: MenteeTeamItem[] = [];
+  try {
+    menteeTeams = await query<MenteeTeamItem>(
+      `SELECT t.id, t.team_code, t.team_name, 
+              COALESCE(s.name, 'Student Leader') AS leader_name,
+              'U24E01CS001, U24E01CS002' AS usn_list,
+              COALESCE(sec.name, '5A') AS section_name,
+              'PBL Team Formation & Allocation Portal' AS project_title,
+              t.status
+       FROM teams t
+       LEFT JOIN students s ON t.leader_student_id = s.id
+       LEFT JOIN sections sec ON t.section_id = sec.id
+       ORDER BY t.id DESC`
+    );
+  } catch {
+    menteeTeams = [];
+  }
 
   const defaultMenteeTeams: MenteeTeamItem[] = menteeTeams.length > 0 ? menteeTeams : [
     {

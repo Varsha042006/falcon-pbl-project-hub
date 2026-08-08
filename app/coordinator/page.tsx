@@ -9,6 +9,7 @@ import {
   RubricItem,
   RubricCriteria,
   AuditLogItem,
+  PblTimelineItem,
 } from "@/components/AirbnbCoordinatorDashboard";
 
 export default async function CoordinatorDashboard() {
@@ -140,7 +141,56 @@ export default async function CoordinatorDashboard() {
   );
   const totalProjects = Number((await query<{ count: string }>("SELECT COUNT(*) FROM projects"))[0]?.count || 92);
 
-  // 7. Fetch audit logs
+  // 7. Fetch PBL Feature Timelines
+  const timelines = await query<PblTimelineItem>(
+    `SELECT id, feature_key, feature_title, description, 
+            to_char(start_time, 'YYYY-MM-DD"T"HH24:MI') AS start_time, 
+            to_char(end_time, 'YYYY-MM-DD"T"HH24:MI') AS end_time, 
+            is_enabled 
+     FROM pbl_timelines 
+     ORDER BY id ASC`
+  );
+
+  const defaultTimelines: PblTimelineItem[] = timelines.length > 0 ? timelines : [
+    {
+      id: 1,
+      feature_key: "team_formation",
+      feature_title: "Student Team Formation & Registration",
+      description: "Controls when students can form teams, add members, and choose team leaders.",
+      start_time: "2026-08-01T09:00",
+      end_time: "2026-08-15T23:59",
+      is_enabled: true,
+    },
+    {
+      id: 2,
+      feature_key: "faculty_project_proposals",
+      feature_title: "Faculty Project Proposals & Publishing",
+      description: "Controls when faculty members can create and publish new PBL project ideas.",
+      start_time: "2026-08-05T09:00",
+      end_time: "2026-08-20T23:59",
+      is_enabled: true,
+    },
+    {
+      id: 3,
+      feature_key: "student_project_selection",
+      feature_title: "Student Project Choice Selection",
+      description: "Controls when student teams can submit their top project choices.",
+      start_time: "2026-08-16T09:00",
+      end_time: "2026-08-30T23:59",
+      is_enabled: true,
+    },
+    {
+      id: 4,
+      feature_key: "faculty_mark_submission",
+      feature_title: "Faculty Mark Submission & Evaluation",
+      description: "Controls when supervisors & guides can evaluate student teams and enter marks for Review 1, 2, and 3.",
+      start_time: "2026-09-01T09:00",
+      end_time: "2026-10-15T23:59",
+      is_enabled: true,
+    },
+  ];
+
+  // 8. Fetch audit logs
   const auditLogs = await query<AuditLogItem>(
     "SELECT id::text, action, entity_name, created_at::text FROM audit_logs ORDER BY id DESC LIMIT 15"
   );
@@ -156,6 +206,7 @@ export default async function CoordinatorDashboard() {
       totalTeams={totalTeams}
       allocatedTeams={allocatedTeams}
       totalProjects={totalProjects}
+      timelines={defaultTimelines}
       auditLogs={auditLogs}
     />
   );

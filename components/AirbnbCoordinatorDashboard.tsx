@@ -44,6 +44,16 @@ export interface RubricItem {
   description: string;
 }
 
+export interface PblTimelineItem {
+  id: number;
+  feature_key: string;
+  feature_title: string;
+  description: string;
+  start_time: string;
+  end_time: string;
+  is_enabled: boolean;
+}
+
 export interface AuditLogItem {
   id: string;
   action: string;
@@ -61,6 +71,7 @@ interface AirbnbCoordinatorDashboardProps {
   totalTeams: number;
   allocatedTeams: number;
   totalProjects: number;
+  timelines: PblTimelineItem[];
   auditLogs: AuditLogItem[];
 }
 
@@ -69,7 +80,7 @@ type CoordinatorPageView =
   | "supervisorMapping"
   | "rubricsCreator"
   | "allocations"
-  | "auditLogs";
+  | "publishTimelines";
 
 export function AirbnbCoordinatorDashboard({
   displayName,
@@ -81,6 +92,7 @@ export function AirbnbCoordinatorDashboard({
   totalTeams,
   allocatedTeams,
   totalProjects,
+  timelines: initialTimelines,
   auditLogs,
 }: AirbnbCoordinatorDashboardProps) {
   const [currentView, setCurrentView] = useState<CoordinatorPageView>("home");
@@ -91,7 +103,6 @@ export function AirbnbCoordinatorDashboard({
 
   // Search filters
   const [supervisorSearch, setSupervisorSearch] = useState("");
-  const [logSearch, setLogSearch] = useState("");
 
   // Assign Supervisor Form State
   const [selectedFacultyId, setSelectedFacultyId] = useState<number>(allFaculty[0]?.id || 1);
@@ -127,6 +138,9 @@ export function AirbnbCoordinatorDashboard({
   const [editLevel3, setEditLevel3] = useState("");
   const [editLevel2, setEditLevel2] = useState("");
   const [editLevel1, setEditLevel1] = useState("");
+
+  // Timelines state
+  const [timelineList, setTimelineList] = useState<PblTimelineItem[]>(initialTimelines);
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
@@ -199,6 +213,36 @@ export function AirbnbCoordinatorDashboard({
         body: JSON.stringify({
           action: "ASSIGN_SUPERVISOR",
           data: { faculty_id: facId, section_id: secId, is_primary: true },
+        }),
+      });
+    } catch {
+      // Toast already shown
+    }
+  };
+
+  // Timeline update handler
+  const handleSaveTimeline = async (key: string, startTime: string, endTime: string, isEnabled: boolean) => {
+    setTimelineList((prev) =>
+      prev.map((t) =>
+        t.feature_key === key ? { ...t, start_time: startTime, end_time: endTime, is_enabled: isEnabled } : t
+      )
+    );
+
+    const targetItem = timelineList.find((t) => t.feature_key === key);
+    showToast(`Updated timeline for "${targetItem?.feature_title || key}"!`);
+
+    try {
+      await fetch("/api/coordinator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "UPDATE_TIMELINE",
+          data: {
+            feature_key: key,
+            start_time: startTime,
+            end_time: endTime,
+            is_enabled: isEnabled,
+          },
         }),
       });
     } catch {
@@ -324,13 +368,6 @@ export function AirbnbCoordinatorDashboard({
     }
   };
 
-  const filteredSupervisors = assignments.filter(
-    (sa) =>
-      sa.faculty_name.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
-      sa.section_name.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
-      sa.program_code.toLowerCase().includes(supervisorSearch.toLowerCase())
-  );
-
   const filteredFacultyList = allFaculty.filter(
     (f) =>
       f.name.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
@@ -338,14 +375,19 @@ export function AirbnbCoordinatorDashboard({
       (f.department && f.department.toLowerCase().includes(supervisorSearch.toLowerCase()))
   );
 
-  const filteredLogs = auditLogs.filter(
-    (log) =>
-      log.action.toLowerCase().includes(logSearch.toLowerCase()) ||
-      log.entity_name.toLowerCase().includes(logSearch.toLowerCase()) ||
-      log.id.toString().includes(logSearch)
-  );
-
   const totalMarks = criteria.reduce((acc, c) => acc + Number(c.max_marks), 0);
+
+  // Helper to determine feature status
+  const getTimelineStatus = (start?: string, end?: string, isEnabled?: boolean) => {
+    if (!isEnabled) return { text: "⚪ DISABLED", color: "#65676b", bg: "#f0f2f5" };
+    if (!start || !end) return { text: "🟢 OPEN", color: "#0f8a5f", bg: "#e7f7ef" };
+    const now = new Date();
+    const s = new Date(start);
+    const e = new Date(end);
+    if (now < s) return { text: "⏳ SCHEDULED", color: "#b7791f", bg: "#fff8e6" };
+    if (now > e) return { text: "🔴 CLOSED", color: "#c62828", bg: "#ffebe9" };
+    return { text: "🟢 OPEN (Active)", color: "#0f8a5f", bg: "#e7f7ef" };
+  };
 
   return (
     <div className="airbnb-admin-root">
@@ -467,10 +509,10 @@ export function AirbnbCoordinatorDashboard({
               <div className="stat-label">Evaluation Rubrics (Click to View / Edit)</div>
             </div>
 
-            <div className="airbnb-card stat-card highlight-card" onClick={() => setCurrentView("auditLogs")} style={{ cursor: "pointer" }}>
-              <div className="stat-icon">🛡️</div>
-              <div className="stat-value">{auditLogs.length}</div>
-              <div className="stat-label">Audit Log Events (Click to View)</div>
+            <div className="airbnb-card stat-card highlight-card" onClick={() => setCurrentView("publishTimelines")} style={{ cursor: "pointer" }}>
+              <div className="stat-icon">🗓️</div>
+              <div className="stat-value">{timelineList.length}</div>
+              <div className="stat-label">Feature Timelines & Schedules (Click to Set)</div>
             </div>
           </div>
 
@@ -513,11 +555,11 @@ export function AirbnbCoordinatorDashboard({
                 <div className="action-arrow">→</div>
               </div>
 
-              <div className="vertical-action-card dark-theme" onClick={() => setCurrentView("auditLogs")}>
-                <div className="action-icon-box dark">🛡️</div>
+              <div className="vertical-action-card dark-theme" onClick={() => setCurrentView("publishTimelines")}>
+                <div className="action-icon-box dark">🗓️</div>
                 <div className="action-text-box">
-                  <div className="action-card-title">Process Audit Logs & Timelines</div>
-                  <div className="action-card-sub">Inspect real-time system audit trails & activity logs</div>
+                  <div className="action-card-title">Publish Feature Timelines & Schedules</div>
+                  <div className="action-card-sub">Set open & close dates for team formation & faculty mark submission</div>
                 </div>
                 <div className="action-arrow">→</div>
               </div>
@@ -1140,7 +1182,7 @@ export function AirbnbCoordinatorDashboard({
               </div>
               <div style={{ background: "#fff8e6", padding: "18px", borderRadius: "14px", border: "1px solid #fde68a" }}>
                 <span style={{ fontSize: "13px", color: "#b7791f" }}>Pending Allocations</span>
-                <h3 style={{ fontSize: "28px", fontWeight: 900, margin: "4px 0 0", color: "{totalTeams - allocatedTeams}" }}>{totalTeams - allocatedTeams}</h3>
+                <h3 style={{ fontSize: "28px", fontWeight: 900, margin: "4px 0 0", color: "#b7791f" }}>{totalTeams - allocatedTeams}</h3>
               </div>
             </div>
 
@@ -1184,54 +1226,107 @@ export function AirbnbCoordinatorDashboard({
         </div>
       )}
 
-      {/* ================= VIEW 5: PROCESS AUDIT LOGS FULL PAGE ================= */}
-      {currentView === "auditLogs" && (
+      {/* ================= VIEW 5: PUBLISH TIMELINES FULL PAGE ================= */}
+      {currentView === "publishTimelines" && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setCurrentView("home")}>
               ← Back to Dashboard
             </button>
-            <h1 className="full-page-title">🛡️ Process Audit Logs & History</h1>
-            <p className="full-page-desc">Inspect real-time audit logs, cycle status changes, and supervisor assignments.</p>
+            <h1 className="full-page-title">🗓️ Publish Feature Timelines & Schedules</h1>
+            <p className="full-page-desc">Set open & close dates for team formation, project choice selection, and faculty evaluation mark submission.</p>
           </div>
 
-          <div className="airbnb-card">
-            <div className="modal-field" style={{ marginBottom: "20px" }}>
-              <input
-                type="text"
-                placeholder="🔍 Search logs by action (e.g. OPEN_CYCLE, UPLOAD_FACULTY) or target entity..."
-                value={logSearch}
-                onChange={(e) => setLogSearch(e.target.value)}
-                style={{ borderRadius: "24px", padding: "14px 20px", fontSize: "15px" }}
-              />
-            </div>
+          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px" }}>
+            {timelineList.map((t) => {
+              const status = getTimelineStatus(t.start_time, t.end_time, t.is_enabled);
 
-            <div className="audit-table-wrap">
-              <table>
-                <thead>
-                  <tr>
-                    <th>Log ID</th>
-                    <th>Action Performed</th>
-                    <th>Target Entity</th>
-                    <th>Timestamp</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {filteredLogs.map((log) => (
-                    <tr key={log.id}>
-                      <td><code>#{log.id}</code></td>
-                      <td>
-                        <span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2" }}>
-                          {log.action}
-                        </span>
-                      </td>
-                      <td><strong>{log.entity_name}</strong></td>
-                      <td>{new Date(log.created_at).toLocaleString()}</td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+              return (
+                <div key={t.feature_key} className="airbnb-card" style={{ padding: "28px" }}>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
+                    <div>
+                      <h2 style={{ fontSize: "18px", fontWeight: 800, margin: "0 0 6px", color: "var(--airbnb-dark)" }}>
+                        {t.feature_title}
+                      </h2>
+                      <p style={{ margin: 0, fontSize: "14px", color: "var(--airbnb-gray)" }}>{t.description}</p>
+                    </div>
+
+                    <span
+                      className="legend-item"
+                      style={{
+                        background: status.bg,
+                        color: status.color,
+                        fontWeight: 800,
+                        fontSize: "13px",
+                        padding: "8px 16px",
+                      }}
+                    >
+                      {status.text}
+                    </span>
+                  </div>
+
+                  {/* Date & Control Form */}
+                  <form
+                    onSubmit={(e) => {
+                      e.preventDefault();
+                      const form = e.target as HTMLFormElement;
+                      const startVal = (form.elements.namedItem("start_time") as HTMLInputElement).value;
+                      const endVal = (form.elements.namedItem("end_time") as HTMLInputElement).value;
+                      const enabledVal = (form.elements.namedItem("is_enabled") as HTMLInputElement).checked;
+                      handleSaveTimeline(t.feature_key, startVal, endVal, enabledVal);
+                    }}
+                    style={{
+                      display: "grid",
+                      gridTemplateColumns: "1fr 1fr 160px 180px",
+                      gap: "18px",
+                      alignItems: "end",
+                      background: "#f8fafc",
+                      padding: "20px",
+                      borderRadius: "14px",
+                      border: "1px solid #e2e8f0",
+                    }}
+                  >
+                    <div className="modal-field" style={{ marginBottom: 0 }}>
+                      <label style={{ fontWeight: 700, fontSize: "13px" }}>Start Date & Time (Opening)</label>
+                      <input
+                        type="datetime-local"
+                        name="start_time"
+                        defaultValue={t.start_time}
+                        required
+                        style={{ padding: "10px 14px", borderRadius: "10px" }}
+                      />
+                    </div>
+
+                    <div className="modal-field" style={{ marginBottom: 0 }}>
+                      <label style={{ fontWeight: 700, fontSize: "13px" }}>End Date & Time (Closing Deadline)</label>
+                      <input
+                        type="datetime-local"
+                        name="end_time"
+                        defaultValue={t.end_time}
+                        required
+                        style={{ padding: "10px 14px", borderRadius: "10px" }}
+                      />
+                    </div>
+
+                    <div className="modal-field" style={{ marginBottom: 0, paddingBottom: "10px" }}>
+                      <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 700, fontSize: "13px" }}>
+                        <input
+                          type="checkbox"
+                          name="is_enabled"
+                          defaultChecked={t.is_enabled}
+                          style={{ width: "18px", height: "18px" }}
+                        />
+                        Enable Feature
+                      </label>
+                    </div>
+
+                    <button type="submit" className="btn-primary-pill" style={{ height: "46px" }}>
+                      💾 Save & Publish
+                    </button>
+                  </form>
+                </div>
+              );
+            })}
           </div>
         </div>
       )}

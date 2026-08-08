@@ -23,7 +23,6 @@ export default async function CoordinatorDashboard() {
     ORDER BY id ASC
   `);
 
-  // Fallback faculty if empty
   const defaultFaculty: FacultyItem[] = allFaculty.length > 0 ? allFaculty : [
     { id: 1, faculty_code: "FAC001", name: "Dr. Anand V", email: "anand@gmu.ac.in", designation: "Professor", department: "CSE" },
     { id: 2, faculty_code: "FAC002", name: "Prof. Sneha K", email: "sneha@gmu.ac.in", designation: "Assistant Professor", department: "CSE" },
@@ -37,7 +36,6 @@ export default async function CoordinatorDashboard() {
     ORDER BY semester ASC, name ASC
   `);
 
-  // Ensure full coverage from Semester 1 to 8 (A, B, C)
   const fullSectionsList: SectionItem[] = [];
   let secIdCounter = 1;
 
@@ -59,26 +57,69 @@ export default async function CoordinatorDashboard() {
   // 3. Fetch rubrics
   const rubrics = await query<RubricItem>("SELECT id, name, description FROM rubrics ORDER BY id DESC");
 
-  // 4. Fetch criteria
+  // 4. Fetch criteria with Bloom Taxonomy Levels
   let criteriaList: RubricCriteria[] = [];
   if (rubrics.length > 0) {
     criteriaList = await query<RubricCriteria>(
-      "SELECT id, name, weightage, max_marks FROM rubric_criteria WHERE rubric_id = $1 ORDER BY id ASC",
+      `SELECT id, co_code, name, weightage, max_marks, level5_desc, level4_desc, level3_desc, level2_desc, level1_desc 
+       FROM rubric_criteria 
+       WHERE rubric_id = $1 
+       ORDER BY id ASC`,
       [rubrics[0].id]
     );
   }
 
-  // Fallback criteria if list is empty
+  // Official GM University Review 3 Rubric Fallback Criteria (20 Marks Total)
   if (criteriaList.length === 0) {
     criteriaList = [
-      { name: "Problem Identification", weightage: 10, max_marks: 10 },
-      { name: "Literature Survey", weightage: 10, max_marks: 10 },
-      { name: "Innovation & Creativity", weightage: 15, max_marks: 15 },
-      { name: "Design / Methodology", weightage: 15, max_marks: 15 },
-      { name: "Implementation", weightage: 20, max_marks: 20 },
-      { name: "Testing & Results", weightage: 10, max_marks: 10 },
-      { name: "Documentation", weightage: 10, max_marks: 10 },
-      { name: "Presentation & Viva-Voce", weightage: 10, max_marks: 10 },
+      {
+        id: 1,
+        co_code: "CO5",
+        name: "Testing & Validation",
+        weightage: 25,
+        max_marks: 5,
+        level5_desc: "Executes exceptional testing with complete and accurate validation (5M)",
+        level4_desc: "Performs thorough testing with reliable validation (4M)",
+        level3_desc: "Conducts effective testing with minor limitations (3M)",
+        level2_desc: "Applies basic testing with partial validation (2M)",
+        level1_desc: "Shows limited testing with insufficient validation (1M)",
+      },
+      {
+        id: 2,
+        co_code: "CO5",
+        name: "Results Interpretation & Reporting",
+        weightage: 25,
+        max_marks: 5,
+        level5_desc: "Presents outstanding evaluation with comprehensive and clear reporting (5M)",
+        level4_desc: "Provides detailed evaluation with clear reporting (4M)",
+        level3_desc: "Demonstrates good evaluation with minor gaps (3M)",
+        level2_desc: "Illustrates basic evaluation with limited reporting (2M)",
+        level1_desc: "Displays weak analysis with inadequate reporting (1M)",
+      },
+      {
+        id: 3,
+        co_code: "CO6",
+        name: "System Demonstration & Functionality",
+        weightage: 25,
+        max_marks: 5,
+        level5_desc: "Showcases excellent demonstration with flawless functionality (5M)",
+        level4_desc: "Exhibits complete demonstration with seamless functionality (4M)",
+        level3_desc: "Demonstrates effective functionality with minor issues (3M)",
+        level2_desc: "Reveals partial demonstration with limited functionality (2M)",
+        level1_desc: "Indicates incomplete demonstration with significant issues (1M)",
+      },
+      {
+        id: 4,
+        co_code: "CO6",
+        name: "Project Significance & Future Scope",
+        weightage: 25,
+        max_marks: 5,
+        level5_desc: "Establishes exceptional impact assessment with innovative future scope (5M)",
+        level4_desc: "Highlights strong impact assessment with clear future scope (4M)",
+        level3_desc: "Explains good impact evaluation with minor gaps (3M)",
+        level2_desc: "Discusses basic impact evaluation with limited future scope (2M)",
+        level1_desc: "Mentions minimal impact evaluation (1M)",
+      },
     ];
   }
 

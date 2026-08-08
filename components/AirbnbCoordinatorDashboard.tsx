@@ -139,8 +139,20 @@ export function AirbnbCoordinatorDashboard({
   const [editLevel2, setEditLevel2] = useState("");
   const [editLevel1, setEditLevel1] = useState("");
 
-  // Timelines state
+  // Timelines state & forms
   const [timelineList, setTimelineList] = useState<PblTimelineItem[]>(initialTimelines);
+  const [newFeatureTitle, setNewFeatureTitle] = useState("");
+  const [newFeatureDesc, setNewFeatureDesc] = useState("");
+  const [newStartTime, setNewStartTime] = useState("2026-08-10T09:00");
+  const [newEndTime, setNewEndTime] = useState("2026-08-25T23:59");
+
+  // Edit Mode for Timeline Item
+  const [editingTimelineId, setEditingTimelineId] = useState<number | null>(null);
+  const [editTimelineTitle, setEditTimelineTitle] = useState("");
+  const [editTimelineDesc, setEditTimelineDesc] = useState("");
+  const [editTimelineStart, setEditTimelineStart] = useState("");
+  const [editTimelineEnd, setEditTimelineEnd] = useState("");
+  const [editTimelineEnabled, setEditTimelineEnabled] = useState(true);
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
@@ -220,16 +232,72 @@ export function AirbnbCoordinatorDashboard({
     }
   };
 
-  // Timeline update handler
-  const handleSaveTimeline = async (key: string, startTime: string, endTime: string, isEnabled: boolean) => {
-    setTimelineList((prev) =>
-      prev.map((t) =>
-        t.feature_key === key ? { ...t, start_time: startTime, end_time: endTime, is_enabled: isEnabled } : t
-      )
-    );
+  // Publish New Custom Timeline Handler
+  const handleCreateTimeline = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newFeatureTitle || !newStartTime || !newEndTime) return;
 
-    const targetItem = timelineList.find((t) => t.feature_key === key);
-    showToast(`Updated timeline for "${targetItem?.feature_title || key}"!`);
+    const newItem: PblTimelineItem = {
+      id: Date.now(),
+      feature_key: newFeatureTitle.toLowerCase().replace(/[^a-z0-9]+/g, "_") + "_" + Date.now(),
+      feature_title: newFeatureTitle,
+      description: newFeatureDesc || `Timeline schedule for ${newFeatureTitle}`,
+      start_time: newStartTime,
+      end_time: newEndTime,
+      is_enabled: true,
+    };
+
+    setTimelineList((prev) => [newItem, ...prev]);
+    setNewFeatureTitle("");
+    setNewFeatureDesc("");
+    showToast(`Published timeline for "${newFeatureTitle}"!`);
+
+    try {
+      const res = await fetch("/api/coordinator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "CREATE_TIMELINE",
+          data: newItem,
+        }),
+      });
+      if (res.ok) {
+        const data = await res.json();
+        if (data.id) {
+          setTimelineList((prev) =>
+            prev.map((t) => (t.id === newItem.id ? { ...t, id: data.id, feature_key: data.feature_key } : t))
+          );
+        }
+      }
+    } catch {
+      // Toast already shown
+    }
+  };
+
+  // Start Editing Timeline Item
+  const handleStartEditTimeline = (t: PblTimelineItem) => {
+    setEditingTimelineId(t.id);
+    setEditTimelineTitle(t.feature_title);
+    setEditTimelineDesc(t.description);
+    setEditTimelineStart(t.start_time);
+    setEditTimelineEnd(t.end_time);
+    setEditTimelineEnabled(t.is_enabled);
+  };
+
+  // Save Editing Timeline Item
+  const handleSaveTimelineEdit = async (t: PblTimelineItem) => {
+    const updated: PblTimelineItem = {
+      ...t,
+      feature_title: editTimelineTitle,
+      description: editTimelineDesc,
+      start_time: editTimelineStart,
+      end_time: editTimelineEnd,
+      is_enabled: editTimelineEnabled,
+    };
+
+    setTimelineList((prev) => prev.map((item) => (item.id === t.id ? updated : item)));
+    setEditingTimelineId(null);
+    showToast(`Updated timeline for "${editTimelineTitle}"!`);
 
     try {
       await fetch("/api/coordinator", {
@@ -237,12 +305,26 @@ export function AirbnbCoordinatorDashboard({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           action: "UPDATE_TIMELINE",
-          data: {
-            feature_key: key,
-            start_time: startTime,
-            end_time: endTime,
-            is_enabled: isEnabled,
-          },
+          data: updated,
+        }),
+      });
+    } catch {
+      // Toast already shown
+    }
+  };
+
+  // Delete Timeline Entry
+  const handleDeleteTimeline = async (t: PblTimelineItem) => {
+    setTimelineList((prev) => prev.filter((item) => item.id !== t.id));
+    showToast(`Deleted timeline "${t.feature_title}"`);
+
+    try {
+      await fetch("/api/coordinator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "DELETE_TIMELINE",
+          data: { id: t.id },
         }),
       });
     } catch {
@@ -298,7 +380,7 @@ export function AirbnbCoordinatorDashboard({
     }
   };
 
-  // Start Edit Mode for Row
+  // Start Edit Mode for Criteria Row
   const handleStartEdit = (idx: number, item: RubricCriteria) => {
     setEditingIndex(idx);
     setEditCoCode(item.co_code || "CO5");
@@ -312,7 +394,7 @@ export function AirbnbCoordinatorDashboard({
     setEditLevel1(item.level1_desc || "");
   };
 
-  // Save Edit Mode for Row
+  // Save Edit Mode for Criteria Row
   const handleSaveEdit = async (idx: number) => {
     if (!editName) return;
 
@@ -559,7 +641,7 @@ export function AirbnbCoordinatorDashboard({
                 <div className="action-icon-box dark">🗓️</div>
                 <div className="action-text-box">
                   <div className="action-card-title">Publish Feature Timelines & Schedules</div>
-                  <div className="action-card-sub">Set open & close dates for team formation & faculty mark submission</div>
+                  <div className="action-card-sub">Write and publish custom timelines for student team formation & faculty mark submission</div>
                 </div>
                 <div className="action-arrow">→</div>
               </div>
@@ -1234,99 +1316,225 @@ export function AirbnbCoordinatorDashboard({
               ← Back to Dashboard
             </button>
             <h1 className="full-page-title">🗓️ Publish Feature Timelines & Schedules</h1>
-            <p className="full-page-desc">Set open & close dates for team formation, project choice selection, and faculty evaluation mark submission.</p>
+            <p className="full-page-desc">Write and publish custom feature timelines for student team formation, project selection, and faculty evaluation mark submission.</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "24px" }}>
-            {timelineList.map((t) => {
-              const status = getTimelineStatus(t.start_time, t.end_time, t.is_enabled);
+          {/* TOP SECTION: CREATE & PUBLISH CUSTOM FEATURE TIMELINE FORM */}
+          <div className="airbnb-card" style={{ marginBottom: "28px" }}>
+            <h2 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "16px" }}>➕ Create & Publish Custom Feature Timeline</h2>
+            <form onSubmit={handleCreateTimeline} style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px" }}>
+              <div className="modal-field" style={{ marginBottom: 0 }}>
+                <label>Feature Title / Name</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Student Team Formation & Registration"
+                  value={newFeatureTitle}
+                  onChange={(e) => setNewFeatureTitle(e.target.value)}
+                  required
+                />
+              </div>
 
-              return (
-                <div key={t.feature_key} className="airbnb-card" style={{ padding: "28px" }}>
-                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", marginBottom: "16px" }}>
-                    <div>
-                      <h2 style={{ fontSize: "18px", fontWeight: 800, margin: "0 0 6px", color: "var(--airbnb-dark)" }}>
-                        {t.feature_title}
-                      </h2>
-                      <p style={{ margin: 0, fontSize: "14px", color: "var(--airbnb-gray)" }}>{t.description}</p>
-                    </div>
+              <div className="modal-field" style={{ marginBottom: 0 }}>
+                <label>Feature Description</label>
+                <input
+                  type="text"
+                  placeholder="e.g. Controls when students can form teams, add members, and choose team leaders."
+                  value={newFeatureDesc}
+                  onChange={(e) => setNewFeatureDesc(e.target.value)}
+                />
+              </div>
 
-                    <span
-                      className="legend-item"
-                      style={{
-                        background: status.bg,
-                        color: status.color,
-                        fontWeight: 800,
-                        fontSize: "13px",
-                        padding: "8px 16px",
-                      }}
-                    >
-                      {status.text}
-                    </span>
-                  </div>
+              <div className="modal-field" style={{ marginBottom: 0 }}>
+                <label>Start Date & Time (Opening)</label>
+                <input
+                  type="datetime-local"
+                  value={newStartTime}
+                  onChange={(e) => setNewStartTime(e.target.value)}
+                  required
+                  style={{ padding: "12px 14px", borderRadius: "10px" }}
+                />
+              </div>
 
-                  {/* Date & Control Form */}
-                  <form
-                    onSubmit={(e) => {
-                      e.preventDefault();
-                      const form = e.target as HTMLFormElement;
-                      const startVal = (form.elements.namedItem("start_time") as HTMLInputElement).value;
-                      const endVal = (form.elements.namedItem("end_time") as HTMLInputElement).value;
-                      const enabledVal = (form.elements.namedItem("is_enabled") as HTMLInputElement).checked;
-                      handleSaveTimeline(t.feature_key, startVal, endVal, enabledVal);
-                    }}
+              <div className="modal-field" style={{ marginBottom: 0 }}>
+                <label>End Date & Time (Closing Deadline)</label>
+                <input
+                  type="datetime-local"
+                  value={newEndTime}
+                  onChange={(e) => setNewEndTime(e.target.value)}
+                  required
+                  style={{ padding: "12px 14px", borderRadius: "10px" }}
+                />
+              </div>
+
+              <div style={{ gridColumn: "span 2", textAlign: "right", marginTop: "8px" }}>
+                <button type="submit" className="btn-primary-pill" style={{ height: "48px", padding: "0 32px" }}>
+                  🚀 Publish Timeline
+                </button>
+              </div>
+            </form>
+          </div>
+
+          {/* BOTTOM SECTION: PUBLISHED FEATURE TIMELINES LIST */}
+          <div className="airbnb-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: 800, margin: 0 }}>
+                📋 Published Feature Timelines ({timelineList.length} Active Schedules)
+              </h2>
+            </div>
+
+            <div style={{ display: "grid", gridTemplateColumns: "1fr", gap: "20px" }}>
+              {timelineList.map((t) => {
+                const status = getTimelineStatus(t.start_time, t.end_time, t.is_enabled);
+                const isEditing = editingTimelineId === t.id;
+
+                return (
+                  <div
+                    key={t.id}
                     style={{
-                      display: "grid",
-                      gridTemplateColumns: "1fr 1fr 160px 180px",
-                      gap: "18px",
-                      alignItems: "end",
                       background: "#f8fafc",
-                      padding: "20px",
-                      borderRadius: "14px",
+                      padding: "24px",
+                      borderRadius: "16px",
                       border: "1px solid #e2e8f0",
                     }}
                   >
-                    <div className="modal-field" style={{ marginBottom: 0 }}>
-                      <label style={{ fontWeight: 700, fontSize: "13px" }}>Start Date & Time (Opening)</label>
-                      <input
-                        type="datetime-local"
-                        name="start_time"
-                        defaultValue={t.start_time}
-                        required
-                        style={{ padding: "10px 14px", borderRadius: "10px" }}
-                      />
-                    </div>
+                    {isEditing ? (
+                      /* EDIT MODE FORM */
+                      <div>
+                        <h3 style={{ fontSize: "16px", fontWeight: 800, marginBottom: "14px" }}>✏️ Edit Published Timeline</h3>
+                        <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "16px", marginBottom: "16px" }}>
+                          <div className="modal-field" style={{ marginBottom: 0 }}>
+                            <label>Feature Title</label>
+                            <input
+                              type="text"
+                              value={editTimelineTitle}
+                              onChange={(e) => setEditTimelineTitle(e.target.value)}
+                              required
+                            />
+                          </div>
 
-                    <div className="modal-field" style={{ marginBottom: 0 }}>
-                      <label style={{ fontWeight: 700, fontSize: "13px" }}>End Date & Time (Closing Deadline)</label>
-                      <input
-                        type="datetime-local"
-                        name="end_time"
-                        defaultValue={t.end_time}
-                        required
-                        style={{ padding: "10px 14px", borderRadius: "10px" }}
-                      />
-                    </div>
+                          <div className="modal-field" style={{ marginBottom: 0 }}>
+                            <label>Description</label>
+                            <input
+                              type="text"
+                              value={editTimelineDesc}
+                              onChange={(e) => setEditTimelineDesc(e.target.value)}
+                            />
+                          </div>
 
-                    <div className="modal-field" style={{ marginBottom: 0, paddingBottom: "10px" }}>
-                      <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 700, fontSize: "13px" }}>
-                        <input
-                          type="checkbox"
-                          name="is_enabled"
-                          defaultChecked={t.is_enabled}
-                          style={{ width: "18px", height: "18px" }}
-                        />
-                        Enable Feature
-                      </label>
-                    </div>
+                          <div className="modal-field" style={{ marginBottom: 0 }}>
+                            <label>Start Date & Time</label>
+                            <input
+                              type="datetime-local"
+                              value={editTimelineStart}
+                              onChange={(e) => setEditTimelineStart(e.target.value)}
+                              required
+                              style={{ padding: "10px 14px", borderRadius: "10px" }}
+                            />
+                          </div>
 
-                    <button type="submit" className="btn-primary-pill" style={{ height: "46px" }}>
-                      💾 Save & Publish
-                    </button>
-                  </form>
-                </div>
-              );
-            })}
+                          <div className="modal-field" style={{ marginBottom: 0 }}>
+                            <label>End Date & Time</label>
+                            <input
+                              type="datetime-local"
+                              value={editTimelineEnd}
+                              onChange={(e) => setEditTimelineEnd(e.target.value)}
+                              required
+                              style={{ padding: "10px 14px", borderRadius: "10px" }}
+                            />
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                          <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer", fontWeight: 700, fontSize: "13px" }}>
+                            <input
+                              type="checkbox"
+                              checked={editTimelineEnabled}
+                              onChange={(e) => setEditTimelineEnabled(e.target.checked)}
+                              style={{ width: "18px", height: "18px" }}
+                            />
+                            Enable Feature
+                          </label>
+
+                          <div style={{ display: "flex", gap: "8px" }}>
+                            <button
+                              type="button"
+                              className="btn-primary-pill"
+                              style={{ padding: "8px 20px", fontSize: "13px", background: "#10b981" }}
+                              onClick={() => handleSaveTimelineEdit(t)}
+                            >
+                              💾 Save Changes
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-secondary-pill"
+                              style={{ padding: "8px 20px", fontSize: "13px" }}
+                              onClick={() => setEditingTimelineId(null)}
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                    ) : (
+                      /* READ DISPLAY MODE */
+                      <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start" }}>
+                        <div>
+                          <div style={{ display: "flex", alignItems: "center", gap: "12px", marginBottom: "6px" }}>
+                            <h3 style={{ fontSize: "18px", fontWeight: 800, margin: 0, color: "var(--airbnb-dark)" }}>
+                              {t.feature_title}
+                            </h3>
+                            <span
+                              className="legend-item"
+                              style={{
+                                background: status.bg,
+                                color: status.color,
+                                fontWeight: 800,
+                                fontSize: "12px",
+                                padding: "4px 12px",
+                              }}
+                            >
+                              {status.text}
+                            </span>
+                          </div>
+
+                          <p style={{ margin: "0 0 12px", fontSize: "14px", color: "var(--airbnb-gray)" }}>{t.description}</p>
+
+                          <div style={{ display: "flex", gap: "24px", fontSize: "13px", fontWeight: 700, color: "#334155" }}>
+                            <div>
+                              <span style={{ color: "var(--airbnb-gray)", fontWeight: 500 }}>Start (Opening): </span>
+                              {t.start_time ? new Date(t.start_time).toLocaleString() : "Not Set"}
+                            </div>
+                            <div>
+                              <span style={{ color: "var(--airbnb-gray)", fontWeight: 500 }}>End (Closing): </span>
+                              {t.end_time ? new Date(t.end_time).toLocaleString() : "Not Set"}
+                            </div>
+                          </div>
+                        </div>
+
+                        <div style={{ display: "flex", gap: "8px" }}>
+                          <button
+                            type="button"
+                            className="btn-secondary-pill"
+                            style={{ padding: "8px 16px", fontSize: "13px" }}
+                            onClick={() => handleStartEditTimeline(t)}
+                          >
+                            ✏️ Edit Timeline
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-secondary-pill"
+                            style={{ padding: "8px 16px", fontSize: "13px", background: "#ffebe9", color: "#c62828", borderColor: "#ffcdd2" }}
+                            onClick={() => handleDeleteTimeline(t)}
+                          >
+                            🗑️ Delete
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       )}

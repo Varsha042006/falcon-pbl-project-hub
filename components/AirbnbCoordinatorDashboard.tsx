@@ -870,10 +870,6 @@ export function AirbnbCoordinatorDashboard({
                     <select value={newCoCode} onChange={(e) => setNewCoCode(e.target.value)}>
                       <option value="CO5">CO5 - Evaluation & Testing</option>
                       <option value="CO6">CO6 - Demonstration & Future Scope</option>
-                      <option value="CO1">CO1 - Problem Definition</option>
-                      <option value="CO2">CO2 - Literature Survey</option>
-                      <option value="CO3">CO3 - Design Methodology</option>
-                      <option value="CO4">CO4 - Implementation</option>
                     </select>
                   </div>
 
@@ -911,6 +907,36 @@ export function AirbnbCoordinatorDashboard({
                   </div>
 
                   <div className="modal-field">
+                    <label>Level 4 Description (4 Marks)</label>
+                    <input
+                      type="text"
+                      placeholder="Performs thorough testing with reliable validation"
+                      value={newLevel4}
+                      onChange={(e) => setNewLevel4(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="modal-field">
+                    <label>Level 3 Description (3 Marks)</label>
+                    <input
+                      type="text"
+                      placeholder="Conducts effective testing with minor limitations"
+                      value={newLevel3}
+                      onChange={(e) => setNewLevel3(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="modal-field">
+                    <label>Level 2 Description (2 Marks)</label>
+                    <input
+                      type="text"
+                      placeholder="Applies basic testing with partial validation"
+                      value={newLevel2}
+                      onChange={(e) => setNewLevel2(e.target.value)}
+                    />
+                  </div>
+
+                  <div className="modal-field">
                     <label>Level 1 Description (1 Mark)</label>
                     <input
                       type="text"
@@ -940,7 +966,7 @@ export function AirbnbCoordinatorDashboard({
                     <thead>
                       <tr>
                         <th>CO</th>
-                        <th>Evaluation Criteria Name</th>
+                        <th>Evaluation Criteria Name & Level Descriptions</th>
                         <th>Max Marks</th>
                         <th style={{ width: "180px", textAlign: "right" }}>Actions</th>
                       </tr>
@@ -953,28 +979,74 @@ export function AirbnbCoordinatorDashboard({
                           <tr key={idx}>
                             <td>
                               {isEditing ? (
-                                <input
-                                  type="text"
+                                <select
                                   value={editCoCode}
                                   onChange={(e) => setEditCoCode(e.target.value)}
-                                  style={{ padding: "6px", width: "60px", fontSize: "13px", fontWeight: 800 }}
-                                />
+                                  style={{ padding: "6px", fontSize: "13px", fontWeight: 800 }}
+                                >
+                                  <option value="CO5">CO5</option>
+                                  <option value="CO6">CO6</option>
+                                </select>
                               ) : (
                                 <strong>{c.co_code || "CO5"}</strong>
                               )}
                             </td>
                             <td>
                               {isEditing ? (
-                                <input
-                                  type="text"
-                                  value={editName}
-                                  onChange={(e) => setEditName(e.target.value)}
-                                  style={{ padding: "6px 10px", fontSize: "14px", borderRadius: "8px", border: "1px solid var(--airbnb-coral)", width: "100%" }}
-                                />
+                                <div style={{ display: "flex", flexDirection: "column", gap: "8px" }}>
+                                  <input
+                                    type="text"
+                                    placeholder="Criteria Name"
+                                    value={editName}
+                                    onChange={(e) => setEditName(e.target.value)}
+                                    style={{ padding: "6px 10px", fontSize: "14px", fontWeight: 700, borderRadius: "8px", border: "1px solid var(--airbnb-coral)" }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Level 5 Description"
+                                    value={editLevel5}
+                                    onChange={(e) => setEditLevel5(e.target.value)}
+                                    style={{ padding: "4px 8px", fontSize: "12px" }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Level 4 Description"
+                                    value={editLevel4}
+                                    onChange={(e) => setEditLevel4(e.target.value)}
+                                    style={{ padding: "4px 8px", fontSize: "12px" }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Level 3 Description"
+                                    value={editLevel3}
+                                    onChange={(e) => setEditLevel3(e.target.value)}
+                                    style={{ padding: "4px 8px", fontSize: "12px" }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Level 2 Description"
+                                    value={editLevel2}
+                                    onChange={(e) => setEditLevel2(e.target.value)}
+                                    style={{ padding: "4px 8px", fontSize: "12px" }}
+                                  />
+                                  <input
+                                    type="text"
+                                    placeholder="Level 1 Description"
+                                    value={editLevel1}
+                                    onChange={(e) => setEditLevel1(e.target.value)}
+                                    style={{ padding: "4px 8px", fontSize: "12px" }}
+                                  />
+                                </div>
                               ) : (
                                 <div>
-                                  <strong>{c.name}</strong>
-                                  <span style={{ display: "block", fontSize: "11px", color: "var(--airbnb-gray)" }}>{c.level5_desc}</span>
+                                  <strong style={{ fontSize: "15px", color: "var(--airbnb-dark)" }}>{c.name}</strong>
+                                  <div style={{ fontSize: "11px", color: "var(--airbnb-gray)", marginTop: "4px", lineHeight: "1.4" }}>
+                                    <div><strong>L5 (5M):</strong> {c.level5_desc || `Executes exceptional ${c.name}`}</div>
+                                    <div><strong>L4 (4M):</strong> {c.level4_desc || `Performs thorough ${c.name}`}</div>
+                                    <div><strong>L3 (3M):</strong> {c.level3_desc || `Conducts effective ${c.name}`}</div>
+                                    <div><strong>L2 (2M):</strong> {c.level2_desc || `Applies basic ${c.name}`}</div>
+                                    <div><strong>L1 (1M):</strong> {c.level1_desc || `Shows limited ${c.name}`}</div>
+                                  </div>
                                 </div>
                               )}
                             </td>
@@ -1068,7 +1140,7 @@ export function AirbnbCoordinatorDashboard({
               </div>
               <div style={{ background: "#fff8e6", padding: "18px", borderRadius: "14px", border: "1px solid #fde68a" }}>
                 <span style={{ fontSize: "13px", color: "#b7791f" }}>Pending Allocations</span>
-                <h3 style={{ fontSize: "28px", fontWeight: 900, margin: "4px 0 0", color: "#b7791f" }}>{totalTeams - allocatedTeams}</h3>
+                <h3 style={{ fontSize: "28px", fontWeight: 900, margin: "4px 0 0", color: "{totalTeams - allocatedTeams}" }}>{totalTeams - allocatedTeams}</h3>
               </div>
             </div>
 

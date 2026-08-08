@@ -4,9 +4,25 @@ import { useState } from "react";
 
 export interface SupervisorAssignment {
   id: number;
+  faculty_id?: number;
   faculty_name: string;
   section_name: string;
   program_code: string;
+}
+
+export interface FacultyItem {
+  id: number;
+  faculty_code: string;
+  name: string;
+  email: string;
+  designation: string | null;
+  department: string | null;
+}
+
+export interface SectionItem {
+  id: number;
+  name: string;
+  program_code?: string;
 }
 
 export interface RubricCriteria {
@@ -32,6 +48,8 @@ export interface AuditLogItem {
 interface AirbnbCoordinatorDashboardProps {
   displayName: string;
   supervisorAssignments: SupervisorAssignment[];
+  allFaculty: FacultyItem[];
+  allSections: SectionItem[];
   rubrics: RubricItem[];
   criteriaList: RubricCriteria[];
   totalTeams: number;
@@ -49,7 +67,9 @@ type CoordinatorPageView =
 
 export function AirbnbCoordinatorDashboard({
   displayName,
-  supervisorAssignments,
+  supervisorAssignments: initialAssignments,
+  allFaculty,
+  allSections,
   rubrics,
   criteriaList: initialCriteria,
   totalTeams,
@@ -58,12 +78,22 @@ export function AirbnbCoordinatorDashboard({
   auditLogs,
 }: AirbnbCoordinatorDashboardProps) {
   const [currentView, setCurrentView] = useState<CoordinatorPageView>("home");
+  const [assignments, setAssignments] = useState<SupervisorAssignment[]>(initialAssignments);
   const [notificationOpen, setNotificationOpen] = useState(false);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Search filters
   const [supervisorSearch, setSupervisorSearch] = useState("");
   const [logSearch, setLogSearch] = useState("");
+
+  // Assign Supervisor Form State
+  const [selectedFacultyId, setSelectedFacultyId] = useState<number>(allFaculty[0]?.id || 1);
+  const [selectedSectionId, setSelectedSectionId] = useState<number>(allSections[0]?.id || 1);
+  const [isPrimary, setIsPrimary] = useState(true);
+
+  // Per-row section selection state
+  const [rowSelections, setRowSelections] = useState<Record<number, number>>({});
 
   // Criteria form state
   const [criteria, setCriteria] = useState<RubricCriteria[]>(initialCriteria);
@@ -74,6 +104,80 @@ export function AirbnbCoordinatorDashboard({
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  // Handler: Assign Faculty as Supervisor
+  const handleAssignSupervisor = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!selectedFacultyId || !selectedSectionId) return;
+
+    const fac = allFaculty.find((f) => f.id === Number(selectedFacultyId));
+    const sec = allSections.find((s) => s.id === Number(selectedSectionId));
+    if (!fac || !sec) return;
+
+    setLoading(true);
+
+    const newAssignment: SupervisorAssignment = {
+      id: Date.now(),
+      faculty_id: fac.id,
+      faculty_name: fac.name,
+      section_name: sec.name,
+      program_code: "CSE",
+    };
+
+    // Optimistic UI Update
+    setAssignments((prev) => [newAssignment, ...prev.filter((a) => a.faculty_name !== fac.name)]);
+    showToast(`Assigned ${fac.name} to Section ${sec.name}!`);
+
+    try {
+      await fetch("/api/coordinator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "ASSIGN_SUPERVISOR",
+          data: {
+            faculty_id: selectedFacultyId,
+            section_id: selectedSectionId,
+            is_primary: isPrimary,
+          },
+        }),
+      });
+    } catch {
+      showToast("Assigned supervisor locally", "success");
+    }
+
+    setLoading(false);
+  };
+
+  // Inline Quick Assign Handler for Faculty Table
+  const handleQuickAssign = async (facId: number, secId: number) => {
+    const fac = allFaculty.find((f) => f.id === facId);
+    const sec = allSections.find((s) => s.id === secId);
+    if (!fac || !sec) return;
+
+    const newAssignment: SupervisorAssignment = {
+      id: Date.now(),
+      faculty_id: fac.id,
+      faculty_name: fac.name,
+      section_name: sec.name,
+      program_code: "CSE",
+    };
+
+    setAssignments((prev) => [newAssignment, ...prev.filter((a) => a.faculty_name !== fac.name)]);
+    showToast(`Assigned ${fac.name} to Section ${sec.name}!`);
+
+    try {
+      await fetch("/api/coordinator", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "ASSIGN_SUPERVISOR",
+          data: { faculty_id: facId, section_id: secId, is_primary: true },
+        }),
+      });
+    } catch {
+      // Toast already shown
+    }
   };
 
   const handleAddCriteria = (e: React.FormEvent) => {
@@ -89,11 +193,18 @@ export function AirbnbCoordinatorDashboard({
     showToast(`Added criteria "${newCriteriaName}" to evaluation rubric!`);
   };
 
-  const filteredSupervisors = supervisorAssignments.filter(
+  const filteredSupervisors = assignments.filter(
     (sa) =>
       sa.faculty_name.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
       sa.section_name.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
       sa.program_code.toLowerCase().includes(supervisorSearch.toLowerCase())
+  );
+
+  const filteredFacultyList = allFaculty.filter(
+    (f) =>
+      f.name.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
+      f.faculty_code.toLowerCase().includes(supervisorSearch.toLowerCase()) ||
+      (f.department && f.department.toLowerCase().includes(supervisorSearch.toLowerCase()))
   );
 
   const filteredLogs = auditLogs.filter(
@@ -160,7 +271,7 @@ export function AirbnbCoordinatorDashboard({
                   </div>
                   <div className="popover-item">
                     <strong>Supervisor Allocations</strong>
-                    <span>12 supervisors assigned to 4 sections.</span>
+                    <span>{assignments.length} supervisors assigned to class sections.</span>
                   </div>
                 </div>
               )}
@@ -209,8 +320,8 @@ export function AirbnbCoordinatorDashboard({
           <div className="stats-grid">
             <div className="airbnb-card stat-card" onClick={() => setCurrentView("supervisorMapping")} style={{ cursor: "pointer" }}>
               <div className="stat-icon">👨‍🏫</div>
-              <div className="stat-value">{supervisorAssignments.length || 12}</div>
-              <div className="stat-label">Active Supervisors (Click to View)</div>
+              <div className="stat-value">{assignments.length || allFaculty.length}</div>
+              <div className="stat-label">Active Supervisors & Faculty (Click to Assign)</div>
             </div>
 
             <div className="airbnb-card stat-card" onClick={() => setCurrentView("allocations")} style={{ cursor: "pointer" }}>
@@ -248,7 +359,7 @@ export function AirbnbCoordinatorDashboard({
                 <div className="action-icon-box green">👥</div>
                 <div className="action-text-box">
                   <div className="action-card-title">Supervisor Mapping & Allocation</div>
-                  <div className="action-card-sub">Assign faculty supervisors to sections (5A, 5B, 5C, 5D)</div>
+                  <div className="action-card-sub">Assign faculty supervisors to 1st-8th sem sections (A, B, C)</div>
                 </div>
                 <div className="action-arrow">→</div>
               </div>
@@ -292,14 +403,73 @@ export function AirbnbCoordinatorDashboard({
               ← Back to Dashboard
             </button>
             <h1 className="full-page-title">👥 Supervisor Mapping & Section Allocation</h1>
-            <p className="full-page-desc">Assign faculty supervisors to class sections and monitor student team guidance.</p>
+            <p className="full-page-desc">Assign faculty supervisors to class sections (Semesters 1 to 8, Sections A, B, C).</p>
           </div>
 
+          {/* Top Form: Assign Faculty as Supervisor */}
+          <div className="airbnb-card" style={{ marginBottom: "28px" }}>
+            <h2 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "16px" }}>➕ Assign Faculty to Class Section</h2>
+            <form onSubmit={handleAssignSupervisor} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 180px 180px", gap: "16px", alignItems: "end" }}>
+              <div className="modal-field" style={{ marginBottom: 0 }}>
+                <label>Select Faculty Member ({allFaculty.length} Available)</label>
+                <select
+                  value={selectedFacultyId}
+                  onChange={(e) => setSelectedFacultyId(Number(e.target.value))}
+                  required
+                >
+                  {allFaculty.map((f) => (
+                    <option key={f.id} value={f.id}>
+                      {f.faculty_code} - {f.name} ({f.designation || "Faculty"})
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="modal-field" style={{ marginBottom: 0 }}>
+                <label>Select Class Section (1st - 8th Sem, A/B/C)</label>
+                <select
+                  value={selectedSectionId}
+                  onChange={(e) => setSelectedSectionId(Number(e.target.value))}
+                  required
+                >
+                  {allSections.map((s) => (
+                    <option key={s.id} value={s.id}>
+                      Section {s.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div className="modal-field" style={{ marginBottom: 0, paddingBottom: "10px" }}>
+                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
+                  <input
+                    type="checkbox"
+                    checked={isPrimary}
+                    onChange={(e) => setIsPrimary(e.target.checked)}
+                    style={{ width: "auto", height: "auto" }}
+                  />
+                  Primary Guide
+                </label>
+              </div>
+
+              <button type="submit" className="btn-primary-pill" style={{ height: "48px" }} disabled={loading}>
+                {loading ? "Assigning..." : "➕ Assign Supervisor"}
+              </button>
+            </form>
+          </div>
+
+          {/* Bottom Table: All Registered Faculty & Assigned Sections */}
           <div className="airbnb-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "18px" }}>
+              <h2 style={{ fontSize: "18px", fontWeight: 800, margin: 0 }}>
+                Faculty Master List & Section Assignments ({allFaculty.length} Professors)
+              </h2>
+            </div>
+
             <div className="modal-field" style={{ marginBottom: "20px" }}>
               <input
                 type="text"
-                placeholder="🔍 Filter by Supervisor Name, Section (e.g. 5A), or Program Code..."
+                placeholder="🔍 Search faculty by name, faculty code (e.g. FAC001), or assigned section..."
                 value={supervisorSearch}
                 onChange={(e) => setSupervisorSearch(e.target.value)}
                 style={{ borderRadius: "24px", padding: "14px 20px", fontSize: "15px" }}
@@ -310,31 +480,66 @@ export function AirbnbCoordinatorDashboard({
               <table>
                 <thead>
                   <tr>
-                    <th>Supervisor Faculty</th>
+                    <th>Faculty Code</th>
+                    <th>Professor Name</th>
+                    <th>Designation & Dept</th>
                     <th>Assigned Section</th>
-                    <th>Program Code</th>
-                    <th>Status</th>
+                    <th>Quick Section Assignment (1st - 8th Sem)</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {filteredSupervisors.map((sa) => (
-                    <tr key={sa.id}>
-                      <td>
-                        <strong>{sa.faculty_name}</strong>
-                      </td>
-                      <td>
-                        <span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2" }}>
-                          {sa.section_name}
-                        </span>
-                      </td>
-                      <td>{sa.program_code}</td>
-                      <td>
-                        <span className="legend-item" style={{ background: "#e7f7ef", color: "#0f8a5f" }}>
-                          🟢 Active Supervisor
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
+                  {filteredFacultyList.map((fac) => {
+                    const currentAssign = assignments.find((a) => a.faculty_name === fac.name);
+                    const defaultSecId = currentAssign
+                      ? allSections.find((s) => s.name === currentAssign.section_name)?.id || allSections[0]?.id || 1
+                      : allSections[0]?.id || 1;
+                    const selectedSecId = rowSelections[fac.id] !== undefined ? rowSelections[fac.id] : defaultSecId;
+
+                    return (
+                      <tr key={fac.id}>
+                        <td><code>{fac.faculty_code}</code></td>
+                        <td>
+                          <strong>{fac.name}</strong>
+                          <span style={{ display: "block", fontSize: "12px", color: "var(--airbnb-gray)" }}>{fac.email}</span>
+                        </td>
+                        <td>{fac.designation || "Faculty"} • {fac.department || "CSE"}</td>
+                        <td>
+                          {currentAssign ? (
+                            <span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2", fontSize: "13px", padding: "6px 12px" }}>
+                              Section {currentAssign.section_name} 🟢
+                            </span>
+                          ) : (
+                            <span className="legend-item" style={{ background: "#f0f2f5", color: "#65676b" }}>
+                              ⚪ Unassigned
+                            </span>
+                          )}
+                        </td>
+                        <td>
+                          <div style={{ display: "flex", gap: "8px", alignItems: "center" }}>
+                            <select
+                              value={selectedSecId}
+                              onChange={(e) => setRowSelections({ ...rowSelections, [fac.id]: Number(e.target.value) })}
+                              style={{ padding: "8px 12px", fontSize: "13px", borderRadius: "10px", width: "150px" }}
+                            >
+                              {allSections.map((sec) => (
+                                <option key={sec.id} value={sec.id}>
+                                  Section {sec.name}
+                                </option>
+                              ))}
+                            </select>
+                            <button
+                              type="button"
+                              className="btn-primary-pill"
+                              style={{ padding: "8px 16px", fontSize: "13px", height: "36px" }}
+                              onClick={() => handleQuickAssign(fac.id, selectedSecId)}
+                            >
+                              Assign
+                            </button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
                 </tbody>
               </table>
             </div>

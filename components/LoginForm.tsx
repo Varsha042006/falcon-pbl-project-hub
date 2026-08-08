@@ -7,7 +7,7 @@ interface LoginFormProps {
   initialError?: string;
 }
 
-type RoleTab = "STUDENT" | "FACULTY" | "ADMIN";
+type RoleTab = "STUDENT" | "FACULTY" | "COORDINATOR" | "ADMIN";
 
 export function LoginForm({ initialError }: LoginFormProps) {
   const [activeTab, setActiveTab] = useState<RoleTab>("STUDENT");
@@ -24,12 +24,6 @@ export function LoginForm({ initialError }: LoginFormProps) {
     setActiveTab(tab);
     setIdentifier("");
     setPassword("");
-    setError("");
-  };
-
-  const handleQuickFill = (code: string) => {
-    setIdentifier(code);
-    setPassword("Falcon@123");
     setError("");
   };
 
@@ -56,6 +50,8 @@ export function LoginForm({ initialError }: LoginFormProps) {
               ? "Invalid USN or password. Valid USNs: U24E01CS001 to U24E01CS200."
               : activeTab === "FACULTY"
               ? "Invalid Faculty Code or password. Valid Codes: FAC001 to FAC020."
+              : activeTab === "COORDINATOR"
+              ? "Invalid Coordinator Code or password. Valid Codes: FAC001 to FAC020."
               : "Invalid Admin Code or password. Valid Code: ADM001."
           );
           setLoading(false);
@@ -67,7 +63,15 @@ export function LoginForm({ initialError }: LoginFormProps) {
         setError("Login failed. Please verify credentials.");
         setLoading(false);
       } else {
-        router.push(activeTab === "STUDENT" ? "/dashboard" : activeTab === "FACULTY" ? "/faculty" : "/admin");
+        const dest =
+          activeTab === "STUDENT"
+            ? "/dashboard"
+            : activeTab === "FACULTY"
+            ? "/faculty"
+            : activeTab === "COORDINATOR"
+            ? "/coordinator"
+            : "/admin";
+        router.push(dest);
         router.refresh();
       }
     } catch {
@@ -87,7 +91,7 @@ export function LoginForm({ initialError }: LoginFormProps) {
           Falcon <span className="gradient-text">PBL Hub</span>
         </h1>
         <p className="showcase-desc">
-          Project-Based Learning Portal for GM University CSE Students (200 USNs), Faculty (20 Codes) & Admin.
+          Project-Based Learning Portal for GM University CSE Students (200 USNs), Faculty (20 Codes), Coordinators & Admin.
         </p>
 
         <div className="showcase-features">
@@ -106,6 +110,13 @@ export function LoginForm({ initialError }: LoginFormProps) {
             </div>
           </div>
           <div className="feature-item">
+            <div className="feature-icon">📋</div>
+            <div>
+              <strong>PBL Coordinator Dashboard</strong>
+              <span>Supervisor Mapping, Rubrics Creator & Audit Logs</span>
+            </div>
+          </div>
+          <div className="feature-item">
             <div className="feature-icon">👑</div>
             <div>
               <strong>1 Admin Account</strong>
@@ -120,7 +131,7 @@ export function LoginForm({ initialError }: LoginFormProps) {
         <div className="insta-card">
           <div className="card-header">
             <div className="insta-logo">Falcon PBL</div>
-            <p className="insta-subtitle">Log in with your USN or Faculty Code</p>
+            <p className="insta-subtitle">Log in with your USN, Faculty, or Coordinator Code</p>
           </div>
 
           {/* Role Navigation Tabs */}
@@ -138,6 +149,13 @@ export function LoginForm({ initialError }: LoginFormProps) {
               onClick={() => handleTabChange("FACULTY")}
             >
               👨‍🏫 Faculty
+            </button>
+            <button
+              type="button"
+              className={`role-tab-btn ${activeTab === "COORDINATOR" ? "active" : ""}`}
+              onClick={() => handleTabChange("COORDINATOR")}
+            >
+              📋 Coordinator
             </button>
             <button
               type="button"
@@ -168,6 +186,8 @@ export function LoginForm({ initialError }: LoginFormProps) {
                   ? "Enter USN (U24E01CS001 - U24E01CS200)"
                   : activeTab === "FACULTY"
                   ? "Enter Faculty Code (FAC001 - FAC020)"
+                  : activeTab === "COORDINATOR"
+                  ? "Enter Coordinator Code (FAC001 - FAC020)"
                   : "Enter Admin Code (ADM001)"}
               </label>
             </div>
@@ -205,13 +225,13 @@ export function LoginForm({ initialError }: LoginFormProps) {
                 "Student Log In"
               ) : activeTab === "FACULTY" ? (
                 "Faculty Log In"
+              ) : activeTab === "COORDINATOR" ? (
+                "Coordinator Log In"
               ) : (
                 "Admin Log In"
               )}
             </button>
           </form>
-
-
         </div>
 
         <div className="insta-footer-box">

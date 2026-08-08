@@ -1,14 +1,14 @@
 import { NextResponse } from "next/server";
 import bcrypt from "bcryptjs";
 import { query } from "@/lib/db";
-import { createSession, getRoleRedirectPath } from "@/lib/auth";
+import { createSession, getRoleRedirectPath, Role } from "@/lib/auth";
 
 type UserRecord = {
   id: number;
   username: string;
   password_hash: string;
   display_name: string;
-  role: "ADMIN" | "COORDINATOR" | "FACULTY" | "SUPERVISOR" | "STUDENT";
+  role: Role;
   faculty_id?: number;
   student_id?: number;
 };
@@ -34,6 +34,17 @@ export async function POST(req: Request) {
       LEFT JOIN students s ON u.student_id = s.id 
       WHERE u.is_active = true 
         AND (LOWER(s.usn) = LOWER($1) OR LOWER(u.username) = LOWER($1) OR LOWER(s.email) = LOWER($1))
+      `,
+      [identifier]
+    );
+  } else if (roleType === "COORDINATOR") {
+    users = await query<UserRecord>(
+      `
+      SELECT u.* 
+      FROM users u 
+      LEFT JOIN faculty f ON u.faculty_id = f.id 
+      WHERE u.is_active = true 
+        AND (u.role = 'COORDINATOR' OR LOWER(f.faculty_code) = LOWER($1) OR LOWER(u.username) = LOWER($1))
       `,
       [identifier]
     );
@@ -83,7 +94,7 @@ export async function POST(req: Request) {
 
   // 2. Dynamic Fallback: If user row not found, check if valid Faculty Code or Student USN exists in DB
   if (!u) {
-    if (roleType === "FACULTY" || roleType === "ALL") {
+    if (roleType === "FACULTY" || roleType === "COORDINATOR" || roleType === "ALL") {
       const facRows = await query<{ id: number; faculty_code: string; name: string }>(
         `SELECT id, faculty_code, name FROM faculty WHERE LOWER(faculty_code) = LOWER($1) AND is_active = true`,
         [identifier]
@@ -91,14 +102,15 @@ export async function POST(req: Request) {
       if (facRows.length > 0) {
         const fac = facRows[0];
         const defaultHash = await bcrypt.hash("Falcon@123", 12);
+        const assignedRole: Role = roleType === "COORDINATOR" ? "COORDINATOR" : "FACULTY";
         const newUser = await query<UserRecord>(
           `
           INSERT INTO users (username, password_hash, display_name, role, faculty_id)
-          VALUES ($1, $2, $3, 'FACULTY', $4)
+          VALUES ($1, $2, $3, $4, $5)
           ON CONFLICT (username) DO UPDATE SET password_hash=EXCLUDED.password_hash
           RETURNING *;
           `,
-          [fac.faculty_code, defaultHash, fac.name, fac.id]
+          [fac.faculty_code, defaultHash, fac.name, assignedRole, fac.id]
         );
         u = newUser[0];
       }
@@ -130,15 +142,17 @@ export async function POST(req: Request) {
     return NextResponse.redirect(new URL("/login?error=1", req.url), 303);
   }
 
+  const effectiveRole: Role = roleType === "COORDINATOR" ? "COORDINATOR" : u.role;
+
   await createSession({
     id: u.id,
     username: u.username,
     displayName: u.display_name,
-    role: u.role,
+    role: effectiveRole,
     facultyId: u.faculty_id,
     studentId: u.student_id,
   });
 
-  const redirectPath = getRoleRedirectPath(u.role);
+  const redirectPath = getRoleRedirectPath(effectiveRole);
   return NextResponse.redirect(new URL(redirectPath, req.url), 303);
 }

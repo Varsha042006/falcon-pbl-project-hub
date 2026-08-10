@@ -35,12 +35,8 @@ export interface SemesterCoordinatorItem {
   semester: number;
   coordinator_faculty_id?: number;
   coordinator_name?: string;
-  section_a_mentor_id?: number;
-  section_a_mentor_name?: string;
-  section_b_mentor_id?: number;
-  section_b_mentor_name?: string;
-  section_c_mentor_id?: number;
-  section_c_mentor_name?: string;
+  mentor_faculty_id?: number;
+  mentor_name?: string;
 }
 
 interface AirbnbAdminDashboardProps {
@@ -105,17 +101,15 @@ export function AirbnbAdminDashboard({
   const [faculties, setFaculties] = useState<FacultyRecord[]>(facultyList);
   const [students, setStudents] = useState<StudentRecord[]>(studentsList);
 
-  // Semester Coordinators State
+  // Semester Coordinators State (1 Coordinator & 1 Mentor per semester)
   const [semCoordinators, setSemCoordinators] = useState<SemesterCoordinatorItem[]>(() => {
     if (initialSemCoords && initialSemCoords.length > 0) return initialSemCoords;
     const defaults: SemesterCoordinatorItem[] = [];
     for (let sem = 1; sem <= 8; sem++) {
       defaults.push({
         semester: sem,
-        coordinator_name: facultyList[0]?.name || "Dr. Anand V",
-        section_a_mentor_name: facultyList[1]?.name || "Prof. Sneha K",
-        section_b_mentor_name: facultyList[2]?.name || "Dr. Rajesh M",
-        section_c_mentor_name: facultyList[0]?.name || "Dr. Anand V",
+        coordinator_name: facultyList[(sem - 1) % facultyList.length]?.name || "Dr. Anand V",
+        mentor_name: facultyList[sem % facultyList.length]?.name || "Prof. Sneha K",
       });
     }
     return defaults;
@@ -124,9 +118,7 @@ export function AirbnbAdminDashboard({
   // Assign Coordinator Form State
   const [selectedSem, setSelectedSem] = useState<number>(5);
   const [selectedCoordId, setSelectedCoordId] = useState<number>(facultyList[0]?.id || 1);
-  const [selectedSecAId, setSelectedSecAId] = useState<number>(facultyList[1]?.id || facultyList[0]?.id || 1);
-  const [selectedSecBId, setSelectedSecBId] = useState<number>(facultyList[2]?.id || facultyList[0]?.id || 1);
-  const [selectedSecCId, setSelectedSecCId] = useState<number>(facultyList[3]?.id || facultyList[0]?.id || 1);
+  const [selectedMentorId, setSelectedMentorId] = useState<number>(facultyList[1]?.id || facultyList[0]?.id || 1);
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
@@ -158,25 +150,19 @@ export function AirbnbAdminDashboard({
     showToast(`Saved Team Rules: Min ${minSize}, Max ${maxSize} members.`);
   };
 
-  // Handler: Assign Coordinator & Mentors for Semester
+  // Handler: Assign Coordinator & Mentor for Semester
   const handleSaveSemesterCoordinator = async (e: React.FormEvent) => {
     e.preventDefault();
 
     const coordFac = facultyList.find((f) => f.id === Number(selectedCoordId));
-    const secAFac = facultyList.find((f) => f.id === Number(selectedSecAId));
-    const secBFac = facultyList.find((f) => f.id === Number(selectedSecBId));
-    const secCFac = facultyList.find((f) => f.id === Number(selectedSecCId));
+    const mentorFac = facultyList.find((f) => f.id === Number(selectedMentorId));
 
     const updatedItem: SemesterCoordinatorItem = {
       semester: Number(selectedSem),
       coordinator_faculty_id: Number(selectedCoordId),
       coordinator_name: coordFac?.name || "Dr. Anand V",
-      section_a_mentor_id: Number(selectedSecAId),
-      section_a_mentor_name: secAFac?.name || "Prof. Sneha K",
-      section_b_mentor_id: Number(selectedSecBId),
-      section_b_mentor_name: secBFac?.name || "Dr. Rajesh M",
-      section_c_mentor_id: Number(selectedSecCId),
-      section_c_mentor_name: secCFac?.name || "Dr. Anand V",
+      mentor_faculty_id: Number(selectedMentorId),
+      mentor_name: mentorFac?.name || "Prof. Sneha K",
     };
 
     setSemCoordinators((prev) => {
@@ -187,7 +173,7 @@ export function AirbnbAdminDashboard({
       return [...prev, updatedItem].sort((a, b) => a.semester - b.semester);
     });
 
-    showToast(`Assigned Coordinator & Mentors for Semester ${selectedSem}!`);
+    showToast(`Assigned Semester ${selectedSem} Coordinator & Faculty Mentor!`);
 
     try {
       await fetch("/api/admin", {
@@ -198,9 +184,7 @@ export function AirbnbAdminDashboard({
           data: {
             semester: Number(selectedSem),
             coordinator_faculty_id: Number(selectedCoordId),
-            section_a_mentor_id: Number(selectedSecAId),
-            section_b_mentor_id: Number(selectedSecBId),
-            section_c_mentor_id: Number(selectedSecCId),
+            mentor_faculty_id: Number(selectedMentorId),
           },
         }),
       });
@@ -290,7 +274,7 @@ export function AirbnbAdminDashboard({
                   </div>
                   <div className="popover-item">
                     <strong>Semester Coordinators</strong>
-                    <span>Semester 1st to 8th coordinators mapped.</span>
+                    <span>Semester 1st to 8th coordinators & mentors mapped.</span>
                   </div>
                 </div>
               )}
@@ -449,8 +433,8 @@ export function AirbnbAdminDashboard({
               <div className="vertical-action-card blue-theme" onClick={() => setCurrentView("assignCoordinators")}>
                 <div className="action-icon-box blue">👨‍💼</div>
                 <div className="action-text-box">
-                  <div className="action-card-title">Assign Coordinator & Faculty Mentors</div>
-                  <div className="action-card-sub">Assign semester coordinator & section mentors for each sem (1st - 8th)</div>
+                  <div className="action-card-title">Assign Coordinator & Faculty Mentor</div>
+                  <div className="action-card-sub">Assign 1 Semester Coordinator & 1 Faculty Mentor for each sem (1st - 8th)</div>
                 </div>
                 <div className="action-arrow">→</div>
               </div>
@@ -772,20 +756,20 @@ export function AirbnbAdminDashboard({
         </div>
       )}
 
-      {/* ================= VIEW 8: ASSIGN COORDINATOR & FACULTY MENTORS FULL PAGE ================= */}
+      {/* ================= VIEW 8: ASSIGN COORDINATOR & FACULTY MENTOR FULL PAGE ================= */}
       {currentView === "assignCoordinators" && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setCurrentView("home")}>
               ← Back to Admin Dashboard
             </button>
-            <h1 className="full-page-title">👨‍💼 Assign Semester Coordinator & Section Faculty Mentors</h1>
-            <p className="full-page-desc">Assign overall semester coordinators and section-wise faculty mentors for 1st to 8th semesters (Sections A, B, C).</p>
+            <h1 className="full-page-title">👨‍💼 Assign Semester Coordinator & Faculty Mentor</h1>
+            <p className="full-page-desc">Assign 1 overall Semester Coordinator and 1 Semester Faculty Mentor for each semester (1st to 8th Semesters).</p>
           </div>
 
           {/* Form Box */}
           <div className="airbnb-card" style={{ marginBottom: "28px" }}>
-            <h2 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "18px" }}>➕ Assign Coordinator & Section Mentors by Semester</h2>
+            <h2 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "18px" }}>➕ Assign Coordinator & Faculty Mentor by Semester</h2>
             <form onSubmit={handleSaveSemesterCoordinator} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 1fr", gap: "16px", alignItems: "end" }}>
               <div className="modal-field" style={{ marginBottom: 0 }}>
                 <label>Select Semester (1st - 8th Sem)</label>
@@ -802,7 +786,7 @@ export function AirbnbAdminDashboard({
                 </select>
               </div>
 
-              <div className="modal-field" style={{ gridColumn: "span 2", marginBottom: 0 }}>
+              <div className="modal-field" style={{ marginBottom: 0 }}>
                 <label>Select Overall Semester Coordinator</label>
                 <select
                   value={selectedCoordId}
@@ -818,45 +802,15 @@ export function AirbnbAdminDashboard({
               </div>
 
               <div className="modal-field" style={{ marginBottom: 0 }}>
-                <label>Section A Faculty Mentor</label>
+                <label>Select Semester Faculty Mentor</label>
                 <select
-                  value={selectedSecAId}
-                  onChange={(e) => setSelectedSecAId(Number(e.target.value))}
+                  value={selectedMentorId}
+                  onChange={(e) => setSelectedMentorId(Number(e.target.value))}
                   required
                 >
                   {faculties.map((f) => (
                     <option key={f.id} value={f.id}>
-                      {f.faculty_code} - {f.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="modal-field" style={{ marginBottom: 0 }}>
-                <label>Section B Faculty Mentor</label>
-                <select
-                  value={selectedSecBId}
-                  onChange={(e) => setSelectedSecBId(Number(e.target.value))}
-                  required
-                >
-                  {faculties.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.faculty_code} - {f.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="modal-field" style={{ marginBottom: 0 }}>
-                <label>Section C Faculty Mentor</label>
-                <select
-                  value={selectedSecCId}
-                  onChange={(e) => setSelectedSecCId(Number(e.target.value))}
-                  required
-                >
-                  {faculties.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.faculty_code} - {f.name}
+                      {f.faculty_code} - {f.name} ({f.designation || "Faculty"})
                     </option>
                   ))}
                 </select>
@@ -864,7 +818,7 @@ export function AirbnbAdminDashboard({
 
               <div style={{ gridColumn: "span 3", textAlign: "right", marginTop: "8px" }}>
                 <button type="submit" className="btn-primary-pill" style={{ height: "48px", padding: "0 32px" }}>
-                  💾 Save & Assign Coordinator & Mentors
+                  💾 Save & Assign Coordinator & Mentor
                 </button>
               </div>
             </form>
@@ -873,7 +827,7 @@ export function AirbnbAdminDashboard({
           {/* Master Table Box */}
           <div className="airbnb-card">
             <h2 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "18px" }}>
-              Semester Coordinators & Section Mentors Schedule (Semesters 1st - 8th)
+              Semester Coordinators & Faculty Mentors Directory (Semesters 1st - 8th)
             </h2>
             <div className="audit-table-wrap">
               <table>
@@ -881,9 +835,7 @@ export function AirbnbAdminDashboard({
                   <tr>
                     <th>Semester</th>
                     <th>Overall Semester Coordinator</th>
-                    <th>Section A Faculty Mentor</th>
-                    <th>Section B Faculty Mentor</th>
-                    <th>Section C Faculty Mentor</th>
+                    <th>Semester Faculty Mentor</th>
                     <th style={{ width: "120px", textAlign: "right" }}>Actions</th>
                   </tr>
                 </thead>
@@ -896,12 +848,14 @@ export function AirbnbAdminDashboard({
                         <td><strong>Semester {sem}</strong></td>
                         <td>
                           <span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2", fontSize: "13px", padding: "6px 12px" }}>
-                            {item?.coordinator_name || faculties[0]?.name || "Dr. Anand V"} 🟢
+                            {item?.coordinator_name || faculties[(sem - 1) % faculties.length]?.name || "Dr. Anand V"} 🟢
                           </span>
                         </td>
-                        <td>{item?.section_a_mentor_name || faculties[1]?.name || "Prof. Sneha K"}</td>
-                        <td>{item?.section_b_mentor_name || faculties[2]?.name || "Dr. Rajesh M"}</td>
-                        <td>{item?.section_c_mentor_name || faculties[0]?.name || "Dr. Anand V"}</td>
+                        <td>
+                          <span className="action-tag" style={{ background: "#e7f7ef", color: "#0f8a5f", fontSize: "13px", padding: "6px 12px" }}>
+                            {item?.mentor_name || faculties[sem % faculties.length]?.name || "Prof. Sneha K"} 🟢
+                          </span>
+                        </td>
                         <td style={{ textAlign: "right" }}>
                           <button
                             type="button"

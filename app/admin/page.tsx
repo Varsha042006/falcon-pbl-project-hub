@@ -57,7 +57,7 @@ export default async function AdminDashboard() {
     ORDER BY s.id ASC
   `);
 
-  // 5. Fetch Semester Coordinators & Mentors
+  // 5. Fetch Semester Coordinators & Mentors (1 Coordinator & 1 Mentor per semester)
   let semesterCoordinators: SemesterCoordinatorItem[] = [];
   try {
     semesterCoordinators = await query<SemesterCoordinatorItem>(`
@@ -66,17 +66,11 @@ export default async function AdminDashboard() {
         sc.semester,
         sc.coordinator_faculty_id,
         f_coord.name AS coordinator_name,
-        sc.section_a_mentor_id,
-        f_a.name AS section_a_mentor_name,
-        sc.section_b_mentor_id,
-        f_b.name AS section_b_mentor_name,
-        sc.section_c_mentor_id,
-        f_c.name AS section_c_mentor_name
+        sc.mentor_faculty_id,
+        f_mentor.name AS mentor_name
       FROM semester_coordinators sc
       LEFT JOIN faculty f_coord ON sc.coordinator_faculty_id = f_coord.id
-      LEFT JOIN faculty f_a ON sc.section_a_mentor_id = f_a.id
-      LEFT JOIN faculty f_b ON sc.section_b_mentor_id = f_b.id
-      LEFT JOIN faculty f_c ON sc.section_c_mentor_id = f_c.id
+      LEFT JOIN faculty f_mentor ON sc.mentor_faculty_id = f_mentor.id
       ORDER BY sc.semester ASC
     `);
   } catch {

@@ -21,6 +21,7 @@ export interface MenteeTeamItem {
   leader_name: string;
   usn_list: string;
   section_name: string;
+  semester?: number;
   project_title: string;
   status: string;
 }
@@ -46,7 +47,8 @@ type FacultyPageView =
   | "myProjects"
   | "menteeTeams"
   | "applications"
-  | "evaluations";
+  | "evaluations"
+  | "allottedTeams";
 
 export function AirbnbFacultyDashboard({
   displayName,
@@ -59,6 +61,9 @@ export function AirbnbFacultyDashboard({
   const [menteeTeams] = useState<MenteeTeamItem[]>(initialTeams);
   const [applications, setApplications] = useState<ApplicationItem[]>(initialApplications);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+
+  // Selected Semester for Allotted Teams view
+  const [selectedAllottedSem, setSelectedAllottedSem] = useState<number>(5);
 
   // New Project Form State
   const [title, setTitle] = useState("");
@@ -209,6 +214,12 @@ export function AirbnbFacultyDashboard({
     }
   };
 
+  // Filter allotted teams by selected semester
+  const filteredAllottedTeams = menteeTeams.filter((t) => {
+    if (!t.semester) return selectedAllottedSem === 5;
+    return Number(t.semester) === Number(selectedAllottedSem);
+  });
+
   return (
     <div className="airbnb-admin-root">
       {/* Toast Notification */}
@@ -286,7 +297,7 @@ export function AirbnbFacultyDashboard({
             </div>
           </div>
 
-          {/* 4 Stats Cards Grid */}
+          {/* 5 Stats Cards Grid */}
           <div className="stats-grid">
             <div className="airbnb-card stat-card" onClick={() => setCurrentView("myProjects")} style={{ cursor: "pointer" }}>
               <div className="stat-icon">💡</div>
@@ -300,16 +311,22 @@ export function AirbnbFacultyDashboard({
               <div className="stat-label">Assigned Mentee Student Teams</div>
             </div>
 
+            <div className="airbnb-card stat-card highlight-card" onClick={() => setCurrentView("allottedTeams")} style={{ cursor: "pointer" }}>
+              <div className="stat-icon">🏆</div>
+              <div className="stat-value">{menteeTeams.length}</div>
+              <div className="stat-label">Allotted Teams (Click to Filter by Sem)</div>
+            </div>
+
             <div className="airbnb-card stat-card" onClick={() => setCurrentView("applications")} style={{ cursor: "pointer" }}>
               <div className="stat-icon">📝</div>
               <div className="stat-value">{applications.filter((a) => a.status === "PENDING").length} Pending</div>
               <div className="stat-label">Project Choice Applications</div>
             </div>
 
-            <div className="airbnb-card stat-card highlight-card" onClick={() => setCurrentView("evaluations")} style={{ cursor: "pointer" }}>
+            <div className="airbnb-card stat-card">
               <div className="stat-icon">📊</div>
               <div className="stat-value">Review 3</div>
-              <div className="stat-label">Evaluation & Mark Submission (Click to Grade)</div>
+              <div className="stat-label">Evaluation & Mark Submission</div>
             </div>
           </div>
 
@@ -330,6 +347,15 @@ export function AirbnbFacultyDashboard({
                 <div className="action-text-box">
                   <div className="action-card-title">Publish & Manage PBL Projects</div>
                   <div className="action-card-sub">Create new project proposals, set domains, and max teams</div>
+                </div>
+                <div className="action-arrow">→</div>
+              </div>
+
+              <div className="vertical-action-card green-theme" onClick={() => setCurrentView("allottedTeams")}>
+                <div className="action-icon-box green">🏆</div>
+                <div className="action-text-box">
+                  <div className="action-card-title">Allotted Teams by Semester</div>
+                  <div className="action-card-sub">Select semester (1st - 8th Sem) to view dedicated allotted teams page</div>
                 </div>
                 <div className="action-arrow">→</div>
               </div>
@@ -573,7 +599,131 @@ export function AirbnbFacultyDashboard({
         </div>
       )}
 
-      {/* ================= VIEW 3: MENTEE STUDENT TEAMS ================= */}
+      {/* ================= VIEW 3: ALLOTTED TEAMS BY SEMESTER ================= */}
+      {currentView === "allottedTeams" && (
+        <div className="airbnb-container">
+          <div className="full-page-header">
+            <button className="back-btn-pill" onClick={() => setCurrentView("home")}>
+              ← Back to Dashboard
+            </button>
+            <h1 className="full-page-title">🏆 Allotted Student Teams by Semester</h1>
+            <p className="full-page-desc">Select a semester below to open its dedicated allotted teams page and view all mentee teams assigned under your supervision.</p>
+          </div>
+
+          {/* Semester Selector Buttons Bar */}
+          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "28px" }}>
+            {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => {
+              const isSelected = Number(selectedAllottedSem) === sem;
+              const countForSem = menteeTeams.filter((t) => (t.semester || 5) === sem).length;
+
+              return (
+                <button
+                  key={sem}
+                  type="button"
+                  className={`btn-secondary-pill ${isSelected ? "active" : ""}`}
+                  style={{
+                    background: isSelected ? "var(--airbnb-dark)" : "#ffffff",
+                    color: isSelected ? "#ffffff" : "var(--airbnb-dark)",
+                    borderColor: "var(--airbnb-dark)",
+                    fontWeight: 800,
+                    padding: "12px 20px",
+                    display: "flex",
+                    align-items: "center",
+                    gap: "8px",
+                    borderRadius: "30px",
+                  }}
+                  onClick={() => setSelectedAllottedSem(sem)}
+                >
+                  <span>Semester {sem}</span>
+                  <span
+                    style={{
+                      background: isSelected ? "#ffffff" : "var(--airbnb-dark)",
+                      color: isSelected ? "var(--airbnb-dark)" : "#ffffff",
+                      fontSize: "11px",
+                      padding: "2px 8px",
+                      borderRadius: "10px",
+                    }}
+                  >
+                    {countForSem}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+
+          {/* Semester Dedicated Page Box */}
+          <div className="airbnb-card">
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "20px" }}>
+              <div>
+                <h2 style={{ fontSize: "20px", fontWeight: 800, margin: "0 0 4px", color: "var(--airbnb-dark)" }}>
+                  Semester {selectedAllottedSem} Allotted Teams ({filteredAllottedTeams.length} Teams)
+                </h2>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--airbnb-gray)" }}>
+                  Showing all student teams allotted for Semester {selectedAllottedSem} under guide {displayName}.
+                </p>
+              </div>
+
+              <span className="status-badge-active" style={{ fontSize: "13px", padding: "6px 14px" }}>
+                🟢 {filteredAllottedTeams.length} Teams Active
+              </span>
+            </div>
+
+            {filteredAllottedTeams.length > 0 ? (
+              <div className="audit-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Team Code</th>
+                      <th>Team Name & Leader</th>
+                      <th>Student Roster (USNs)</th>
+                      <th>Class Section</th>
+                      <th>Allotted Project Title</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAllottedTeams.map((t) => (
+                      <tr key={t.id}>
+                        <td><code>{t.team_code}</code></td>
+                        <td>
+                          <strong>{t.team_name}</strong>
+                          <span style={{ display: "block", fontSize: "12px", color: "var(--airbnb-gray)" }}>
+                            Leader: {t.leader_name}
+                          </span>
+                        </td>
+                        <td><code>{t.usn_list}</code></td>
+                        <td>
+                          <span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2", fontSize: "13px" }}>
+                            Section {t.section_name}
+                          </span>
+                        </td>
+                        <td><strong>{t.project_title}</strong></td>
+                        <td>
+                          <span className="legend-item" style={{ background: "#e7f7ef", color: "#0f8a5f", fontWeight: 800 }}>
+                            {t.status} 🟢
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: "40px", background: "#f8fafc", borderRadius: "14px", border: "1px dashed #cbd5e1" }}>
+                <div style={{ fontSize: "32px", marginBottom: "8px" }}>⚪</div>
+                <h3 style={{ fontSize: "16px", fontWeight: 800, margin: "0 0 4px", color: "var(--airbnb-dark)" }}>
+                  No Teams Allotted for Semester {selectedAllottedSem} Yet
+                </h3>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--airbnb-gray)" }}>
+                  Select another semester above or check back when the coordinator finalizes team allocations.
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
+      {/* ================= VIEW 4: MENTEE STUDENT TEAMS ================= */}
       {currentView === "menteeTeams" && (
         <div className="airbnb-container">
           <div className="full-page-header">
@@ -618,7 +768,7 @@ export function AirbnbFacultyDashboard({
         </div>
       )}
 
-      {/* ================= VIEW 4: APPLICATIONS REVIEW ================= */}
+      {/* ================= VIEW 5: APPLICATIONS REVIEW ================= */}
       {currentView === "applications" && (
         <div className="airbnb-container">
           <div className="full-page-header">
@@ -696,7 +846,7 @@ export function AirbnbFacultyDashboard({
         </div>
       )}
 
-      {/* ================= VIEW 5: EVALUATION & MARK SUBMISSION ================= */}
+      {/* ================= VIEW 6: EVALUATION & MARK SUBMISSION ================= */}
       {currentView === "evaluations" && (
         <div className="airbnb-container">
           <div className="full-page-header">

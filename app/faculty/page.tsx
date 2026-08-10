@@ -48,7 +48,7 @@ export default async function FacultyDashboard() {
     },
   ];
 
-  // 2. Fetch Mentee Teams
+  // 2. Fetch Mentee Teams with Semester
   let menteeTeams: MenteeTeamItem[] = [];
   try {
     menteeTeams = await query<MenteeTeamItem>(
@@ -56,6 +56,7 @@ export default async function FacultyDashboard() {
               COALESCE(s.name, 'Student Leader') AS leader_name,
               'U24E01CS001, U24E01CS002' AS usn_list,
               COALESCE(sec.name, '5A') AS section_name,
+              COALESCE(sec.semester, 5) AS semester,
               'PBL Team Formation & Allocation Portal' AS project_title,
               t.status
        FROM teams t
@@ -75,6 +76,7 @@ export default async function FacultyDashboard() {
       leader_name: "Student 001",
       usn_list: "U24E01CS001, U24E01CS002, U24E01CS003",
       section_name: "5A",
+      semester: 5,
       project_title: "AI-Powered Healthcare Diagnostic Portal",
       status: "ALLOCATED",
     },
@@ -85,7 +87,30 @@ export default async function FacultyDashboard() {
       leader_name: "Student 005",
       usn_list: "U24E01CS005, U24E01CS006, U24E01CS007",
       section_name: "5B",
+      semester: 5,
       project_title: "Blockchain Supply Chain Tracking System",
+      status: "ALLOCATED",
+    },
+    {
+      id: 3,
+      team_code: "TEAM-3A-01",
+      team_name: "Team Cyber CS-3A",
+      leader_name: "Aarav Sharma",
+      usn_list: "U24E03CS010, U24E03CS011, U24E03CS012",
+      section_name: "3A",
+      semester: 3,
+      project_title: "Smart Campus Energy Monitoring",
+      status: "ALLOCATED",
+    },
+    {
+      id: 4,
+      team_code: "TEAM-6C-04",
+      team_name: "Team Quantum CS-6C",
+      leader_name: "Ananya Rao",
+      usn_list: "U24E06CS040, U24E06CS041, U24E06CS042",
+      section_name: "6C",
+      semester: 6,
+      project_title: "AI Student Support Assistant",
       status: "ALLOCATED",
     },
   ];

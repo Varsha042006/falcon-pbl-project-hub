@@ -389,7 +389,7 @@ export function AirbnbFacultyDashboard({
                   🏆 Allotted Teams by Semester
                 </h2>
                 <p className="timeline-desc">
-                  Select a semester below to open its dedicated page and view all mentee teams assigned under your supervision.
+                  Select an academic semester from the dropdown below to view all allotted student teams assigned under your supervision.
                 </p>
               </div>
 
@@ -399,43 +399,94 @@ export function AirbnbFacultyDashboard({
                 style={{ padding: "8px 20px", fontSize: "13px", fontWeight: 800 }}
                 onClick={() => setCurrentView("allottedTeams")}
               >
-                Explore All Semesters →
+                Open Full Page View →
               </button>
             </div>
 
-            {/* Semester Quick Selector Buttons Grid */}
-            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px" }}>
-              {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => {
-                const countForSem = menteeTeams.filter((t) => (t.semester || 5) === sem).length;
-
-                return (
-                  <button
-                    key={sem}
-                    type="button"
-                    style={{
-                      background: "#f8fafc",
-                      border: "1px solid #cbd5e1",
-                      borderRadius: "14px",
-                      padding: "16px 12px",
-                      textAlign: "center",
-                      cursor: "pointer",
-                      transition: "all 0.2s ease",
-                    }}
-                    onClick={() => {
-                      setSelectedAllottedSem(sem);
-                      setCurrentView("allottedTeams");
-                    }}
-                  >
-                    <div style={{ fontSize: "16px", fontWeight: 800, color: "var(--airbnb-dark)", marginBottom: "4px" }}>
-                      Semester {sem}
-                    </div>
-                    <div style={{ fontSize: "12px", color: countForSem > 0 ? "#0f8a5f" : "var(--airbnb-gray)", fontWeight: 700 }}>
-                      {countForSem > 0 ? `🟢 ${countForSem} Teams` : "⚪ 0 Teams"}
-                    </div>
-                  </button>
-                );
-              })}
+            {/* Dropdown Selector Bar */}
+            <div style={{ display: "flex", alignItems: "center", gap: "16px", background: "#f8fafc", padding: "16px 20px", borderRadius: "16px", border: "1px solid #e2e8f0", marginBottom: "20px" }}>
+              <label style={{ fontWeight: 800, fontSize: "14px", color: "var(--airbnb-dark)", whiteSpace: "nowrap" }}>
+                Select Semester:
+              </label>
+              <select
+                value={selectedAllottedSem}
+                onChange={(e) => setSelectedAllottedSem(Number(e.target.value))}
+                style={{
+                  flex: 1,
+                  padding: "12px 18px",
+                  fontSize: "15px",
+                  fontWeight: 700,
+                  borderRadius: "12px",
+                  border: "2px solid #3b82f6",
+                  background: "#ffffff",
+                  color: "var(--airbnb-dark)",
+                  cursor: "pointer",
+                  boxShadow: "0 2px 8px rgba(59, 130, 246, 0.1)",
+                }}
+              >
+                {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => {
+                  const count = menteeTeams.filter((t) => (t.semester || 5) === sem).length;
+                  return (
+                    <option key={sem} value={sem}>
+                      Semester {sem} — {count > 0 ? `${count} Teams Allotted 🟢` : "0 Teams Allotted ⚪"}
+                    </option>
+                  );
+                })}
+              </select>
             </div>
+
+            {/* Inline Roster Table for Selected Semester */}
+            {filteredAllottedTeams.length > 0 ? (
+              <div className="audit-table-wrap">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>Team Code</th>
+                      <th>Team Name & Leader</th>
+                      <th>Student Roster (USNs)</th>
+                      <th>Class Section</th>
+                      <th>Allotted Project Title</th>
+                      <th>Status</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {filteredAllottedTeams.map((t) => (
+                      <tr key={t.id}>
+                        <td><code>{t.team_code}</code></td>
+                        <td>
+                          <strong>{t.team_name}</strong>
+                          <span style={{ display: "block", fontSize: "12px", color: "var(--airbnb-gray)" }}>
+                            Leader: {t.leader_name}
+                          </span>
+                        </td>
+                        <td><code>{t.usn_list}</code></td>
+                        <td>
+                          <span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2", fontSize: "13px" }}>
+                            Section {t.section_name}
+                          </span>
+                        </td>
+                        <td><strong>{t.project_title}</strong></td>
+                        <td>
+                          <span className="legend-item" style={{ background: "#e7f7ef", color: "#0f8a5f", fontWeight: 800 }}>
+                            {t.status} 🟢
+                          </span>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            ) : (
+              <div style={{ textAlign: "center", padding: "30px", background: "#ffffff", borderRadius: "14px", border: "1px dashed #cbd5e1" }}>
+                <div style={{ fontSize: "28px", marginBottom: "6px" }}>⚪</div>
+                <h3 style={{ fontSize: "15px", fontWeight: 800, margin: "0 0 4px", color: "var(--airbnb-dark)" }}>
+                  No Student Teams Allotted for Semester {selectedAllottedSem} Yet
+                </h3>
+                <p style={{ margin: 0, fontSize: "13px", color: "var(--airbnb-gray)" }}>
+                  Select another semester from the dropdown above to view assigned mentee teams.
+                </p>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -659,45 +710,35 @@ export function AirbnbFacultyDashboard({
             <p className="full-page-desc">Select a semester below to open its dedicated allotted teams page and view all mentee teams assigned under your supervision.</p>
           </div>
 
-          {/* Semester Selector Buttons Bar */}
-          <div style={{ display: "flex", gap: "10px", flexWrap: "wrap", marginBottom: "28px" }}>
-            {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => {
-              const isSelected = Number(selectedAllottedSem) === sem;
-              const countForSem = menteeTeams.filter((t) => (t.semester || 5) === sem).length;
-
-              return (
-                <button
-                  key={sem}
-                  type="button"
-                  className={`btn-secondary-pill ${isSelected ? "active" : ""}`}
-                  style={{
-                    background: isSelected ? "var(--airbnb-dark)" : "#ffffff",
-                    color: isSelected ? "#ffffff" : "var(--airbnb-dark)",
-                    borderColor: "var(--airbnb-dark)",
-                    fontWeight: 800,
-                    padding: "12px 20px",
-                    display: "flex",
-                    alignItems: "center",
-                    gap: "8px",
-                    borderRadius: "30px",
-                  }}
-                  onClick={() => setSelectedAllottedSem(sem)}
-                >
-                  <span>Semester {sem}</span>
-                  <span
-                    style={{
-                      background: isSelected ? "#ffffff" : "var(--airbnb-dark)",
-                      color: isSelected ? "var(--airbnb-dark)" : "#ffffff",
-                      fontSize: "11px",
-                      padding: "2px 8px",
-                      borderRadius: "10px",
-                    }}
-                  >
-                    {countForSem}
-                  </span>
-                </button>
-              );
-            })}
+          {/* Semester Selector Dropdown Bar */}
+          <div style={{ display: "flex", alignItems: "center", gap: "16px", background: "#ffffff", padding: "18px 24px", borderRadius: "16px", border: "1px solid #cbd5e1", boxShadow: "0 4px 12px rgba(0,0,0,0.04)", marginBottom: "28px" }}>
+            <label style={{ fontWeight: 800, fontSize: "15px", color: "var(--airbnb-dark)", whiteSpace: "nowrap" }}>
+              🎓 Select Semester View:
+            </label>
+            <select
+              value={selectedAllottedSem}
+              onChange={(e) => setSelectedAllottedSem(Number(e.target.value))}
+              style={{
+                flex: 1,
+                padding: "12px 18px",
+                fontSize: "15px",
+                fontWeight: 800,
+                borderRadius: "12px",
+                border: "2px solid #3b82f6",
+                background: "#ffffff",
+                color: "var(--airbnb-dark)",
+                cursor: "pointer",
+              }}
+            >
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => {
+                const count = menteeTeams.filter((t) => (t.semester || 5) === sem).length;
+                return (
+                  <option key={sem} value={sem}>
+                    Semester {sem} — {count > 0 ? `${count} Teams Allotted 🟢` : "0 Teams Allotted ⚪"}
+                  </option>
+                );
+              })}
+            </select>
           </div>
 
           {/* Semester Dedicated Page Box */}

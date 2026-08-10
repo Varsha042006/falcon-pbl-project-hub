@@ -351,14 +351,6 @@ export function AirbnbFacultyDashboard({
                 <div className="action-arrow">→</div>
               </div>
 
-              <div className="vertical-action-card green-theme" onClick={() => setCurrentView("allottedTeams")}>
-                <div className="action-icon-box green">🏆</div>
-                <div className="action-text-box">
-                  <div className="action-card-title">Allotted Teams by Semester</div>
-                  <div className="action-card-sub">Select semester (1st - 8th Sem) to view dedicated allotted teams page</div>
-                </div>
-                <div className="action-arrow">→</div>
-              </div>
 
               <div className="vertical-action-card green-theme" onClick={() => setCurrentView("menteeTeams")}>
                 <div className="action-icon-box green">👥</div>

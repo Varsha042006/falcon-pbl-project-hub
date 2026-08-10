@@ -1093,3 +1093,27 @@ tr:last-child td {
     grid-template-columns: 1fr;
   }
 }
+
+/* Print styles for Rubric Document Download/Print */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #rubric-document-to-print, #rubric-document-to-print * {
+    visibility: visible;
+  }
+  #rubric-document-to-print {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+  }
+  .no-print {
+    display: none !important;
+  }
+}
+

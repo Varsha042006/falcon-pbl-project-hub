@@ -814,38 +814,51 @@ export function AirbnbCoordinatorDashboard({
           </div>
 
           {/* Mode Switcher Tabs */}
-          <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
-            <button
-              className={`btn-secondary-pill ${rubricTab === "viewRubric" ? "active" : ""}`}
-              style={{
-                background: rubricTab === "viewRubric" ? "var(--airbnb-dark)" : "#ffffff",
-                color: rubricTab === "viewRubric" ? "#ffffff" : "var(--airbnb-dark)",
-                borderColor: "var(--airbnb-dark)",
-                fontWeight: 800,
-                padding: "10px 24px"
-              }}
-              onClick={() => setRubricTab("viewRubric")}
-            >
-              📜 View Official Rubric Document
-            </button>
-            <button
-              className={`btn-secondary-pill ${rubricTab === "editRubric" ? "active" : ""}`}
-              style={{
-                background: rubricTab === "editRubric" ? "var(--airbnb-dark)" : "#ffffff",
-                color: rubricTab === "editRubric" ? "#ffffff" : "var(--airbnb-dark)",
-                borderColor: "var(--airbnb-dark)",
-                fontWeight: 800,
-                padding: "10px 24px"
-              }}
-              onClick={() => setRubricTab("editRubric")}
-            >
-              ⚙️ Create / Edit Criteria
-            </button>
+          <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "24px" }} className="no-print">
+            <div style={{ display: "flex", gap: "12px" }}>
+              <button
+                className={`btn-secondary-pill ${rubricTab === "viewRubric" ? "active" : ""}`}
+                style={{
+                  background: rubricTab === "viewRubric" ? "var(--airbnb-dark)" : "#ffffff",
+                  color: rubricTab === "viewRubric" ? "#ffffff" : "var(--airbnb-dark)",
+                  borderColor: "var(--airbnb-dark)",
+                  fontWeight: 800,
+                  padding: "10px 24px"
+                }}
+                onClick={() => setRubricTab("viewRubric")}
+              >
+                📜 View Official Rubric Document
+              </button>
+              <button
+                className={`btn-secondary-pill ${rubricTab === "editRubric" ? "active" : ""}`}
+                style={{
+                  background: rubricTab === "editRubric" ? "var(--airbnb-dark)" : "#ffffff",
+                  color: rubricTab === "editRubric" ? "#ffffff" : "var(--airbnb-dark)",
+                  borderColor: "var(--airbnb-dark)",
+                  fontWeight: 800,
+                  padding: "10px 24px"
+                }}
+                onClick={() => setRubricTab("editRubric")}
+              >
+                ⚙️ Create / Edit Criteria
+              </button>
+            </div>
+
+            {rubricTab === "viewRubric" && (
+              <button
+                type="button"
+                className="btn-primary-pill"
+                style={{ background: "#10b981", color: "#ffffff", padding: "10px 24px", fontWeight: 800, display: "flex", alignItems: "center", gap: "8px" }}
+                onClick={() => window.print()}
+              >
+                📥 Download / Print Rubric Document (PDF)
+              </button>
+            )}
           </div>
 
           {/* MODE A: OFFICIAL GM UNIVERSITY RUBRIC DOCUMENT VIEW */}
           {rubricTab === "viewRubric" && (
-            <div className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000" }}>
+            <div id="rubric-document-to-print" className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000" }}>
               {/* Document Header */}
               <div style={{ textAlign: "center", borderBottom: "2px solid #000000", paddingBottom: "16px", marginBottom: "24px" }}>
                 <p style={{ margin: 0, fontSize: "12px", fontStyle: "italic" }}>Srishyla Education Trust ®</p>
@@ -862,7 +875,7 @@ export function AirbnbCoordinatorDashboard({
                   PROJECT-BASED LEARNING (PBL) ASSESSMENT – Review 3
                 </h2>
                 <p style={{ fontSize: "13px", fontWeight: 800, textTransform: "uppercase", margin: 0 }}>
-                  RUBRIC FOR PROJECT-BASED LEARNING (PBL) ASSESSMENT WITH A TOTAL OF 20 MARKS, CATEGORIZED BASED ON BLOOM'S TAXONOMY:
+                  RUBRIC FOR PROJECT-BASED LEARNING (PBL) ASSESSMENT WITH A TOTAL OF {totalMarks} MARKS, CATEGORIZED BASED ON BLOOM'S TAXONOMY:
                 </p>
               </div>
 
@@ -941,9 +954,13 @@ export function AirbnbCoordinatorDashboard({
                     <tr style={{ background: "#f1f5f9", textAlign: "center" }}>
                       <th style={{ border: "1px solid #000", padding: "8px" }}>Student Name</th>
                       <th style={{ border: "1px solid #000", padding: "8px" }}>USN</th>
-                      <th style={{ border: "1px solid #000", padding: "8px" }}>CO5 (10 Marks)</th>
-                      <th style={{ border: "1px solid #000", padding: "8px" }}>CO6 (10 Marks)</th>
-                      <th style={{ border: "1px solid #000", padding: "8px" }}>Total (20 Marks)</th>
+                      <th style={{ border: "1px solid #000", padding: "8px" }}>
+                        CO5 ({criteria.filter((c) => (c.co_code || "CO5") === "CO5").reduce((a, b) => a + Number(b.max_marks), 0)} Marks)
+                      </th>
+                      <th style={{ border: "1px solid #000", padding: "8px" }}>
+                        CO6 ({criteria.filter((c) => (c.co_code || "CO5") === "CO6").reduce((a, b) => a + Number(b.max_marks), 0)} Marks)
+                      </th>
+                      <th style={{ border: "1px solid #000", padding: "8px" }}>Total ({totalMarks} Marks)</th>
                     </tr>
                   </thead>
                   <tbody>

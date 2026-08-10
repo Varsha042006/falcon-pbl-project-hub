@@ -97,9 +97,13 @@ export function AirbnbFacultyDashboard({
   // Selected Semester for Allotted Teams view
   const [selectedAllottedSem, setSelectedAllottedSem] = useState<number>(5);
 
-  // Separate Active Team Pages State:
-  // 1. activeChatTeamId -> Opens dedicated Chat Room Page
-  // 2. activeEvalTeamId -> Opens dedicated Rubrics Evaluation Page
+  // Active Team Workspace State:
+  // selectedTeamWorkspaceId -> ID of team selected by clicking team name / button
+  // teamSubView -> "hub" (main workspace page with 2 big cards) | "chat" (dedicated chat page) | "eval" (dedicated evaluation page)
+  const [selectedTeamWorkspaceId, setSelectedTeamWorkspaceId] = useState<number | null>(null);
+  const [teamSubView, setTeamSubView] = useState<"hub" | "chat" | "eval">("hub");
+
+  // Direct standalone team page state:
   const [activeChatTeamId, setActiveChatTeamId] = useState<number | null>(null);
   const [activeEvalTeamId, setActiveEvalTeamId] = useState<number | null>(null);
 
@@ -216,9 +220,9 @@ export function AirbnbFacultyDashboard({
   };
 
   // Handler: Send Message in Team Conversation Room
-  const handleSendChatMessage = (e: React.FormEvent) => {
+  const handleSendChatMessage = (e: React.FormEvent, teamId: number) => {
     e.preventDefault();
-    if (!newMessageText.trim() || activeChatTeamId === null) return;
+    if (!newMessageText.trim()) return;
 
     const newMsg: TeamMessage = {
       id: Date.now(),
@@ -230,10 +234,10 @@ export function AirbnbFacultyDashboard({
 
     setTeamChatMessages((prev) => ({
       ...prev,
-      [activeChatTeamId]: [...(prev[activeChatTeamId] || []), newMsg],
+      [teamId]: [...(prev[teamId] || []), newMsg],
     }));
 
-    const activeTeam = menteeTeams.find((t) => t.id === activeChatTeamId);
+    const activeTeam = menteeTeams.find((t) => t.id === teamId);
     showToast(`Sent guidance message to ${activeTeam?.team_name || "Team"}!`);
     setNewMessageText("");
   };
@@ -397,20 +401,246 @@ export function AirbnbFacultyDashboard({
     return Number(t.semester) === Number(selectedAllottedSem);
   });
 
+  const selectedTeamWorkspace = menteeTeams.find((t) => t.id === selectedTeamWorkspaceId);
   const activeChatTeam = menteeTeams.find((t) => t.id === activeChatTeamId);
   const activeEvalTeam = menteeTeams.find((t) => t.id === activeEvalTeamId);
 
-  const activeMessages = activeChatTeamId ? teamChatMessages[activeChatTeamId] || [] : [];
-  const evalForTeam = activeEvalTeamId ? teamEvaluations[activeEvalTeamId] || { criteriaScores: { 1: 4, 2: 4, 3: 4, 4: 4 }, co5_marks: 8, co6_marks: 8, remarks: "Good implementation.", submitted: false } : null;
+  // Helper function to render the exact Official GM University Coordinator Rubrics Table Document
+  const renderOfficialCoordinatorRubricDocument = (team: MenteeTeamItem) => {
+    const evalData = teamEvaluations[team.id] || {
+      criteriaScores: { 1: 5, 2: 4, 3: 5, 4: 4 },
+      co5_marks: 9,
+      co6_marks: 9,
+      remarks: "Excellent performance across CO5 and CO6 criteria.",
+      submitted: false,
+    };
 
-  // Calculate current score total for activeEvalTeam
-  const calculateTotalScore = (teamId: number) => {
-    const record = teamEvaluations[teamId] || { criteriaScores: { 1: 4, 2: 4, 3: 4, 4: 4 } };
-    let total = 0;
+    // Calculate dynamic total score
+    let totalScore = 0;
+    let co5Score = 0;
+    let co6Score = 0;
     publishedRubrics.forEach((crit) => {
-      total += record.criteriaScores[crit.id] ?? crit.max_marks;
+      const score = evalData.criteriaScores[crit.id] ?? crit.max_marks;
+      totalScore += score;
+      if (crit.co_code === "CO5") co5Score += score;
+      if (crit.co_code === "CO6") co6Score += score;
     });
-    return total > 0 ? total : 18;
+
+    return (
+      <div id="rubric-document-eval" className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000" }}>
+        {/* Document Institutional Header */}
+        <div style={{ textAlign: "center", borderBottom: "2px solid #000000", paddingBottom: "16px", marginBottom: "24px" }}>
+          <p style={{ margin: 0, fontSize: "12px", fontStyle: "italic" }}>Srishyla Education Trust ®</p>
+          <h1 style={{ margin: "4px 0 2px", fontSize: "26px", fontWeight: 900, letterSpacing: "1px", color: "#000000" }}>GM UNIVERSITY</h1>
+          <p style={{ margin: 0, fontSize: "12px", fontWeight: 700 }}>(Established under the Karnataka State Act No. 19 of 2023)</p>
+          <p style={{ margin: "2px 0 0", fontSize: "12px" }}>Post Box no-4, PB Road, Davangere-577006</p>
+          <p style={{ margin: "4px 0 0", fontSize: "13px", fontWeight: 800, textTransform: "uppercase" }}>FACULTY OF ENGINEERING AND TECHNOLOGY</p>
+          <p style={{ margin: "2px 0 0", fontSize: "12px", fontWeight: 800, color: "#c62828" }}>SCST B.Tech CSE</p>
+        </div>
+
+        {/* Assessment Document Title */}
+        <div style={{ textAlign: "center", marginBottom: "20px" }}>
+          <h2 style={{ textDecoration: "underline", fontSize: "18px", fontWeight: 900, margin: "0 0 10px" }}>
+            PROJECT-BASED LEARNING (PBL) ASSESSMENT – Review 3
+          </h2>
+          <p style={{ fontSize: "13px", fontWeight: 800, textTransform: "uppercase", margin: 0 }}>
+            COORDINATOR PUBLISHED RUBRIC FOR PROJECT-BASED LEARNING (PBL) ASSESSMENT (20 MARKS TOTAL):
+          </p>
+        </div>
+
+        {/* Metadata Information Bar */}
+        <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", fontSize: "13px", fontWeight: 700, marginBottom: "24px", padding: "12px 16px", border: "1px solid #000", background: "#f8fafc" }}>
+          <div><strong>Semester:</strong> {team.semester || 5}th Sem</div>
+          <div><strong>Section:</strong> {team.section_name}</div>
+          <div><strong>Course Code:</strong> UE24CS2406</div>
+          <div><strong>Team Code:</strong> {team.team_code}</div>
+          <div><strong>Project Title:</strong> {team.project_title}</div>
+        </div>
+
+        {/* Official Bloom's Taxonomy Matrix Rubrics Table Created by Coordinator */}
+        <div style={{ overflowX: "auto", marginBottom: "28px" }}>
+          <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #000", fontSize: "12px" }}>
+            <thead>
+              <tr style={{ background: "#f1f5f9", textAlign: "center" }}>
+                <th style={{ border: "1px solid #000", padding: "10px 6px", width: "45px" }}>CO</th>
+                <th style={{ border: "1px solid #000", padding: "10px 8px", width: "160px" }}>Criteria</th>
+                <th style={{ border: "1px solid #000", padding: "10px 6px", width: "45px" }}>Max</th>
+                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 5 (5M)</th>
+                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 4 (4M)</th>
+                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 3 (3M)</th>
+                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 2 (2M)</th>
+                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 1 (1M)</th>
+                <th style={{ border: "1px solid #000", padding: "10px 6px", width: "110px", background: "#e0f2fe" }}>Assign Score</th>
+              </tr>
+            </thead>
+            <tbody>
+              {publishedRubrics.map((c) => {
+                const currentVal = evalData.criteriaScores[c.id] ?? c.max_marks;
+
+                return (
+                  <tr key={c.id} style={{ textAlign: "left", verticalAlign: "top" }}>
+                    <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>
+                      <span style={{ padding: "2px 6px", background: c.co_code === "CO5" ? "#e7f3ff" : "#e7f7ef", color: c.co_code === "CO5" ? "#1877f2" : "#0f8a5f", borderRadius: "4px" }}>
+                        {c.co_code}
+                      </span>
+                    </td>
+                    <td style={{ border: "1px solid #000", padding: "10px 8px", fontWeight: 800, color: "#1c1e21" }}>
+                      {c.name}
+                    </td>
+                    <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>
+                      {c.max_marks}
+                    </td>
+                    <td style={{ border: "1px solid #000", padding: "8px", background: currentVal === 5 ? "#dcfce7" : "transparent" }}>
+                      <span style={{ fontSize: "11px" }}>{c.level5_desc || `Executes exceptional ${c.name} (5M)`}</span>
+                    </td>
+                    <td style={{ border: "1px solid #000", padding: "8px", background: currentVal === 4 ? "#dcfce7" : "transparent" }}>
+                      <span style={{ fontSize: "11px" }}>{c.level4_desc || `Performs thorough ${c.name} (4M)`}</span>
+                    </td>
+                    <td style={{ border: "1px solid #000", padding: "8px", background: currentVal === 3 ? "#dcfce7" : "transparent" }}>
+                      <span style={{ fontSize: "11px" }}>{c.level3_desc || `Conducts effective ${c.name} (3M)`}</span>
+                    </td>
+                    <td style={{ border: "1px solid #000", padding: "8px", background: currentVal === 2 ? "#dcfce7" : "transparent" }}>
+                      <span style={{ fontSize: "11px" }}>{c.level2_desc || `Applies basic ${c.name} (2M)`}</span>
+                    </td>
+                    <td style={{ border: "1px solid #000", padding: "8px", background: currentVal === 1 ? "#dcfce7" : "transparent" }}>
+                      <span style={{ fontSize: "11px" }}>{c.level1_desc || `Shows limited ${c.name} (1M)`}</span>
+                    </td>
+                    <td style={{ border: "1px solid #000", padding: "8px", background: "#f0f9ff", textAlign: "center" }}>
+                      <select
+                        value={currentVal}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setTeamEvaluations((prev) => ({
+                            ...prev,
+                            [team.id]: {
+                              ...(prev[team.id] || { criteriaScores: {}, co5_marks: 0, co6_marks: 0, remarks: "", submitted: false }),
+                              criteriaScores: {
+                                ...(prev[team.id]?.criteriaScores || {}),
+                                [c.id]: val,
+                              },
+                            },
+                          }));
+                        }}
+                        style={{
+                          padding: "6px 8px",
+                          fontSize: "13px",
+                          fontWeight: 800,
+                          borderRadius: "6px",
+                          border: "2px solid #2563eb",
+                          background: "#ffffff",
+                          cursor: "pointer",
+                          width: "100%",
+                        }}
+                      >
+                        {[5, 4, 3, 2, 1, 0].map((m) => (
+                          <option key={m} value={m}>{m} / {c.max_marks} Marks</option>
+                        ))}
+                      </select>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Instructions & Regulations Note */}
+        <div style={{ fontSize: "12px", marginBottom: "24px", lineHeight: "1.6", background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
+          <strong>Evaluation Note & Regulations:</strong>
+          <ol style={{ margin: "4px 0 0", paddingLeft: "20px" }}>
+            <li>Students who have not met the guides regularly will be awarded <strong>zero marks</strong>.</li>
+            <li>Students who do not present their project progress according to the format or miss presentation will be awarded <strong>zero marks</strong>.</li>
+          </ol>
+        </div>
+
+        {/* Student Team Member Marks Allocation Table */}
+        <div style={{ marginBottom: "28px" }}>
+          <h3 style={{ fontWeight: 800, fontSize: "14px", margin: "0 0 10px" }}>
+            Student Team Roster Marks Allocation ({team.team_name})
+          </h3>
+          <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #000", fontSize: "12px" }}>
+            <thead>
+              <tr style={{ background: "#f1f5f9", textAlign: "center" }}>
+                <th style={{ border: "1px solid #000", padding: "8px" }}>Student Name / Role</th>
+                <th style={{ border: "1px solid #000", padding: "8px" }}>USN</th>
+                <th style={{ border: "1px solid #000", padding: "8px" }}>CO5 Score (Max 10M)</th>
+                <th style={{ border: "1px solid #000", padding: "8px" }}>CO6 Score (Max 10M)</th>
+                <th style={{ border: "1px solid #000", padding: "8px", background: "#dcfce7" }}>Total Score (Max 20M)</th>
+              </tr>
+            </thead>
+            <tbody>
+              {team.usn_list.split(",").map((usn, idx) => (
+                <tr key={idx} style={{ textAlign: "center" }}>
+                  <td style={{ border: "1px solid #000", padding: "8px", textAlign: "left", fontWeight: 700 }}>
+                    {idx === 0 ? `👑 ${team.leader_name} (Leader)` : `🎓 Student Member #${idx + 1}`}
+                  </td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontFamily: "monospace", fontWeight: 700 }}>
+                    {usn.trim()}
+                  </td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontWeight: 800, color: "#1d4ed8" }}>
+                    {co5Score} / 10 Marks
+                  </td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontWeight: 800, color: "#0f766e" }}>
+                    {co6Score} / 10 Marks
+                  </td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontWeight: 900, fontSize: "14px", color: "#059669", background: "#f0fdf4" }}>
+                    {totalScore} / 20 Marks
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Faculty Feedback & Declaration Block */}
+        <form onSubmit={(e) => handleSaveTeamEvaluation(e, team.id)}>
+          <div style={{ marginBottom: "20px" }}>
+            <label style={{ fontSize: "14px", fontWeight: 800, display: "block", marginBottom: "6px" }}>
+              Faculty Guide Assessment Feedback & Remarks:
+            </label>
+            <textarea
+              rows={3}
+              placeholder={`Enter specific evaluation remarks for ${team.team_name}...`}
+              value={evalData.remarks || ""}
+              onChange={(e) => {
+                const text = e.target.value;
+                setTeamEvaluations((prev) => ({
+                  ...prev,
+                  [team.id]: {
+                    ...(prev[team.id] || { criteriaScores: {}, co5_marks: 0, co6_marks: 0, remarks: "", submitted: false }),
+                    remarks: text,
+                  },
+                }));
+              }}
+              style={{ width: "100%", padding: "12px 14px", borderRadius: "8px", border: "1px solid #000", fontSize: "13px" }}
+            />
+          </div>
+
+          <div style={{ borderTop: "2px solid #000", paddingTop: "18px", marginTop: "24px" }}>
+            <p style={{ fontSize: "12px", fontStyle: "italic", marginBottom: "20px" }}>
+              I hereby declare that I have conducted the Review 3 presentation of the students, analyzed their progress, and evaluated their performance according to the Coordinator Published Rubric criteria. The marks have been entered as per their performance.
+            </p>
+
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 700 }}>Total Final Score Assigned:</span>
+                <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#059669", margin: "2px 0 0" }}>
+                  {totalScore} / 20 Marks
+                </h2>
+              </div>
+
+              <button
+                type="submit"
+                className="btn-primary-pill"
+                style={{ height: "50px", padding: "0 32px", fontSize: "15px", fontWeight: 800, background: "#10b981" }}
+              >
+                💾 Submit & Lock Marks for {team.team_name}
+              </button>
+            </div>
+          </div>
+        </form>
+      </div>
+    );
   };
 
   return (
@@ -434,13 +664,15 @@ export function AirbnbFacultyDashboard({
           </div>
 
           <div className="airbnb-header-right">
-            {(currentView !== "home" || activeChatTeamId !== null || activeEvalTeamId !== null) && (
+            {(currentView !== "home" || selectedTeamWorkspaceId !== null || activeChatTeamId !== null || activeEvalTeamId !== null) && (
               <button
                 className="action-pill-btn"
                 style={{ background: "#f0f2f5", color: "#1c1e21", border: "1px solid #dbdbdb" }}
                 onClick={() => {
+                  setSelectedTeamWorkspaceId(null);
                   setActiveChatTeamId(null);
                   setActiveEvalTeamId(null);
+                  setTeamSubView("hub");
                   setCurrentView("home");
                 }}
               >
@@ -481,31 +713,274 @@ export function AirbnbFacultyDashboard({
         </div>
       </header>
 
-      {/* ================= SEPARATE PAGE 1: DEDICATED TEAM CHAT ROOM PAGE ================= */}
-      {activeChatTeamId !== null && activeChatTeam && (
+      {/* ================= TEAM WORKSPACE PAGE: CLICKING TEAM NAME OPENS THIS ================= */}
+      {selectedTeamWorkspaceId !== null && selectedTeamWorkspace && (
+        <div className="airbnb-container">
+          {/* SUB-VIEW 1: HUB PAGE WITH 2 BIG CARDS */}
+          {teamSubView === "hub" && (
+            <div>
+              <div className="full-page-header">
+                <button className="back-btn-pill" onClick={() => setSelectedTeamWorkspaceId(null)}>
+                  ← Back to Allotted Teams Directory
+                </button>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                  <div>
+                    <h1 className="full-page-title" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      🏆 {selectedTeamWorkspace.team_name} ({selectedTeamWorkspace.team_code})
+                    </h1>
+                    <p className="full-page-desc">
+                      Section {selectedTeamWorkspace.section_name} • Semester {selectedTeamWorkspace.semester || 5} • Assigned Project: <strong>{selectedTeamWorkspace.project_title}</strong>
+                    </p>
+                  </div>
+
+                  <span className="status-badge-active" style={{ fontSize: "13px", padding: "8px 16px" }}>
+                    🟢 Team Workspace Active
+                  </span>
+                </div>
+              </div>
+
+              {/* Roster Bar */}
+              <div className="airbnb-card" style={{ marginBottom: "24px", background: "#f8fafc" }}>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", flexWrap: "wrap", gap: "12px" }}>
+                  <div>
+                    <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 700 }}>Team Leader & Roster:</span>
+                    <div style={{ fontSize: "15px", fontWeight: 800, color: "var(--airbnb-dark)", marginTop: "2px" }}>
+                      👑 {selectedTeamWorkspace.leader_name} • <code>{selectedTeamWorkspace.usn_list}</code>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+              {/* 2 Big Separate Feature Choice Cards Grid */}
+              <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px" }}>
+                {/* CARD 1: TEAM GUIDANCE CHAT ROOM PAGE */}
+                <div
+                  className="airbnb-card"
+                  style={{
+                    padding: "32px",
+                    cursor: "pointer",
+                    transition: "transform 0.2s, box-shadow 0.2s",
+                    border: "2px solid #3b82f6",
+                    background: "linear-gradient(180deg, #ffffff 0%, #f0f7ff 100%)",
+                  }}
+                  onClick={() => setTeamSubView("chat")}
+                >
+                  <div style={{ fontSize: "42px", marginBottom: "16px" }}>💬</div>
+                  <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "0 0 8px", color: "var(--airbnb-dark)" }}>
+                    Team Guidance Chat Room Page
+                  </h2>
+                  <p style={{ fontSize: "14px", color: "#475569", lineHeight: "1.6", margin: "0 0 24px" }}>
+                    Open dedicated separate page for direct live conversation, guidance instructions, and file notes between Guide {displayName} and team members.
+                  </p>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#2563eb" }}>
+                      {(teamChatMessages[selectedTeamWorkspace.id] || []).length} Messages in Chat Thread
+                    </span>
+                    <button type="button" className="btn-primary-pill" style={{ background: "#2563eb", padding: "10px 20px" }}>
+                      🚀 Open Chat Room Page →
+                    </button>
+                  </div>
+                </div>
+
+                {/* CARD 2: RUBRICS EVALUATION & MARKS ALLOCATION PAGE */}
+                <div
+                  className="airbnb-card"
+                  style={{
+                    padding: "32px",
+                    cursor: "pointer",
+                    transition: "transform 0.2s, box-shadow 0.2s",
+                    border: "2px solid #10b981",
+                    background: "linear-gradient(180deg, #ffffff 0%, #ecfdf5 100%)",
+                  }}
+                  onClick={() => setTeamSubView("eval")}
+                >
+                  <div style={{ fontSize: "42px", marginBottom: "16px" }}>📊</div>
+                  <h2 style={{ fontSize: "22px", fontWeight: 800, margin: "0 0 8px", color: "var(--airbnb-dark)" }}>
+                    Coordinator Rubrics Evaluation & Marks Allocation
+                  </h2>
+                  <p style={{ fontSize: "14px", color: "#475569", lineHeight: "1.6", margin: "0 0 24px" }}>
+                    Open dedicated separate page rendering the exact GM University Rubric Document matrix created & published by Coordinator.
+                  </p>
+                  <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <span style={{ fontSize: "13px", fontWeight: 700, color: "#059669" }}>
+                      Review 3 Matrix (20 Marks Total)
+                    </span>
+                    <button type="button" className="btn-primary-pill" style={{ background: "#10b981", padding: "10px 20px" }}>
+                      🚀 Open Evaluation Page →
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SUB-VIEW 2: DEDICATED CHAT ROOM PAGE */}
+          {teamSubView === "chat" && (
+            <div>
+              <div className="full-page-header">
+                <button className="back-btn-pill" onClick={() => setTeamSubView("hub")}>
+                  ← Back to {selectedTeamWorkspace.team_name} Workspace
+                </button>
+                <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+                  <div>
+                    <h1 className="full-page-title" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                      💬 {selectedTeamWorkspace.team_name} — Team Conversation Room
+                    </h1>
+                    <p className="full-page-desc">
+                      Dedicated guidance chat room between Guide <strong>{displayName}</strong> and team members.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "24px" }}>
+                {/* Left Sidebar */}
+                <div className="airbnb-card" style={{ height: "fit-content" }}>
+                  <div style={{ paddingBottom: "16px", borderBottom: "1px solid #e2e8f0", marginBottom: "16px" }}>
+                    <span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2", fontSize: "12px" }}>
+                      Section {selectedTeamWorkspace.section_name} • Semester {selectedTeamWorkspace.semester || 5}
+                    </span>
+                    <h2 style={{ fontSize: "18px", fontWeight: 800, margin: "8px 0 4px", color: "var(--airbnb-dark)" }}>
+                      {selectedTeamWorkspace.team_name}
+                    </h2>
+                    <code style={{ fontSize: "13px", color: "#64748b" }}>{selectedTeamWorkspace.team_code}</code>
+                  </div>
+
+                  <div style={{ marginBottom: "20px" }}>
+                    <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748b", fontWeight: 800, marginBottom: "8px" }}>
+                      Assigned Project Title
+                    </h3>
+                    <p style={{ fontSize: "14px", fontWeight: 700, color: "var(--airbnb-dark)", margin: 0, lineHeight: "1.4" }}>
+                      {selectedTeamWorkspace.project_title}
+                    </p>
+                  </div>
+
+                  <div>
+                    <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748b", fontWeight: 800, marginBottom: "12px" }}>
+                      Team Members ({selectedTeamWorkspace.usn_list.split(",").length} Members)
+                    </h3>
+                    <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                      <div style={{ padding: "10px 12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                        <div>
+                          <strong style={{ fontSize: "13px", display: "block", color: "var(--airbnb-dark)" }}>
+                            👑 {selectedTeamWorkspace.leader_name}
+                          </strong>
+                          <span style={{ fontSize: "11px", color: "#64748b" }}>Team Leader</span>
+                        </div>
+                        <span style={{ fontSize: "11px", background: "#e7f7ef", color: "#0f8a5f", padding: "2px 8px", borderRadius: "10px", fontWeight: 700, marginLeft: "auto" }}>
+                          ONLINE
+                        </span>
+                      </div>
+
+                      {selectedTeamWorkspace.usn_list.split(",").map((usn, idx) => (
+                        <div key={idx} style={{ padding: "8px 12px", background: "#ffffff", borderRadius: "8px", border: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                          <span style={{ fontSize: "12px", fontFamily: "monospace", fontWeight: 700, color: "var(--airbnb-dark)" }}>
+                            🎓 {usn.trim()}
+                          </span>
+                          <span style={{ fontSize: "10px", color: "#94a3b8" }}>Member #{idx + 1}</span>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+
+                {/* Right Chat Area */}
+                <div className="airbnb-card" style={{ display: "flex", flexDirection: "column", minHeight: "560px" }}>
+                  <div style={{ paddingBottom: "14px", borderBottom: "1px solid #e2e8f0", marginBottom: "18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0, color: "var(--airbnb-dark)" }}>
+                      💬 Conversation Thread ({selectedTeamWorkspace.team_name})
+                    </h3>
+                    <span style={{ fontSize: "12px", color: "#64748b" }}>
+                      {(teamChatMessages[selectedTeamWorkspace.id] || []).length} Messages
+                    </span>
+                  </div>
+
+                  <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px", paddingRight: "8px" }}>
+                    {(teamChatMessages[selectedTeamWorkspace.id] || []).map((msg) => {
+                      const isFaculty = msg.sender_role === "FACULTY";
+
+                      return (
+                        <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignItems: isFaculty ? "flex-end" : "flex-start" }}>
+                          <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
+                            <span style={{ fontSize: "12px", fontWeight: 800, color: isFaculty ? "#1d4ed8" : "#0f766e" }}>
+                              {isFaculty ? `👨‍🏫 ${msg.sender_name} (Guide)` : `👨‍🎓 ${msg.sender_name}`}
+                            </span>
+                            <span style={{ fontSize: "11px", color: "#94a3b8" }}>{msg.timestamp}</span>
+                          </div>
+                          <div
+                            style={{
+                              maxWidth: "80%",
+                              padding: "14px 18px",
+                              borderRadius: isFaculty ? "18px 18px 2px 18px" : "18px 18px 18px 2px",
+                              background: isFaculty ? "#eff6ff" : "#f8fafc",
+                              color: "var(--airbnb-dark)",
+                              border: isFaculty ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
+                              fontSize: "14px",
+                              lineHeight: "1.5",
+                            }}
+                          >
+                            {msg.message}
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+
+                  <form onSubmit={(e) => handleSendChatMessage(e, selectedTeamWorkspace.id)} style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}>
+                    <div style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
+                      <div style={{ flex: 1 }}>
+                        <textarea
+                          rows={2}
+                          placeholder={`Write guidance message to ${selectedTeamWorkspace.team_name}...`}
+                          value={newMessageText}
+                          onChange={(e) => setNewMessageText(e.target.value)}
+                          style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "2px solid #cbd5e1", fontSize: "14px" }}
+                        />
+                      </div>
+                      <button type="submit" className="btn-primary-pill" style={{ height: "52px", padding: "0 24px", background: "#3b82f6", fontWeight: 800 }}>
+                        🚀 Send Message
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* SUB-VIEW 3: DEDICATED RUBRICS EVALUATION PAGE (EXACT COORDINATOR DOCUMENT MATRIX) */}
+          {teamSubView === "eval" && (
+            <div>
+              <div className="full-page-header">
+                <button className="back-btn-pill" onClick={() => setTeamSubView("hub")}>
+                  ← Back to {selectedTeamWorkspace.team_name} Workspace
+                </button>
+                <h1 className="full-page-title">
+                  📊 {selectedTeamWorkspace.team_name} — Coordinator Published Rubrics Assessment
+                </h1>
+                <p className="full-page-desc">
+                  Official GM University Review 3 Rubric Document matrix created & published by Coordinator.
+                </p>
+              </div>
+
+              {renderOfficialCoordinatorRubricDocument(selectedTeamWorkspace)}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* ================= STANDALONE PAGE 1: CHAT ROOM DIRECTLY FROM TABLE ================= */}
+      {selectedTeamWorkspaceId === null && activeChatTeamId !== null && activeChatTeam && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setActiveChatTeamId(null)}>
               ← Back to Allotted Teams
             </button>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-              <div>
-                <h1 className="full-page-title" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  💬 {activeChatTeam.team_name} — Team Conversation Room
-                </h1>
-                <p className="full-page-desc">
-                  Dedicated page for direct guidance chat & mentorship between Guide <strong>{displayName}</strong> and team members.
-                </p>
-              </div>
-
-              <span className="status-badge-active" style={{ fontSize: "13px", padding: "8px 16px" }}>
-                🟢 Chat Room Active
-              </span>
-            </div>
+            <h1 className="full-page-title">💬 {activeChatTeam.team_name} — Team Conversation Room</h1>
+            <p className="full-page-desc">Dedicated guidance chat room between Guide <strong>{displayName}</strong> and team members.</p>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "24px" }}>
-            {/* Left Sidebar: Team Details & Member Roster */}
+            {/* Left Sidebar */}
             <div className="airbnb-card" style={{ height: "fit-content" }}>
               <div style={{ paddingBottom: "16px", borderBottom: "1px solid #e2e8f0", marginBottom: "16px" }}>
                 <span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2", fontSize: "12px" }}>
@@ -521,7 +996,7 @@ export function AirbnbFacultyDashboard({
                 <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748b", fontWeight: 800, marginBottom: "8px" }}>
                   Assigned Project Title
                 </h3>
-                <p style={{ fontSize: "14px", fontWeight: 700, color: "var(--airbnb-dark)", margin: 0, lineHeight: "1.4" }}>
+                <p style={{ fontSize: "14px", fontWeight: 700, color: "var(--airbnb-dark)", margin: 0 }}>
                   {activeChatTeam.project_title}
                 </p>
               </div>
@@ -531,69 +1006,38 @@ export function AirbnbFacultyDashboard({
                   Team Members ({activeChatTeam.usn_list.split(",").length} Members)
                 </h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ padding: "10px 12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div>
-                      <strong style={{ fontSize: "13px", display: "block", color: "var(--airbnb-dark)" }}>
-                        👑 {activeChatTeam.leader_name}
-                      </strong>
-                      <span style={{ fontSize: "11px", color: "#64748b" }}>Team Leader</span>
-                    </div>
-                    <span style={{ fontSize: "11px", background: "#e7f7ef", color: "#0f8a5f", padding: "2px 8px", borderRadius: "10px", fontWeight: 700, marginLeft: "auto" }}>
-                      ONLINE
-                    </span>
+                  <div style={{ padding: "10px 12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0" }}>
+                    <strong style={{ fontSize: "13px", display: "block", color: "var(--airbnb-dark)" }}>
+                      👑 {activeChatTeam.leader_name}
+                    </strong>
+                    <span style={{ fontSize: "11px", color: "#64748b" }}>Team Leader</span>
                   </div>
 
                   {activeChatTeam.usn_list.split(",").map((usn, idx) => (
-                    <div key={idx} style={{ padding: "8px 12px", background: "#ffffff", borderRadius: "8px", border: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                    <div key={idx} style={{ padding: "8px 12px", background: "#ffffff", borderRadius: "8px", border: "1px solid #f1f5f9" }}>
                       <span style={{ fontSize: "12px", fontFamily: "monospace", fontWeight: 700, color: "var(--airbnb-dark)" }}>
                         🎓 {usn.trim()}
                       </span>
-                      <span style={{ fontSize: "10px", color: "#94a3b8" }}>Member #{idx + 1}</span>
                     </div>
                   ))}
                 </div>
               </div>
             </div>
 
-            {/* Right Main Area: Conversation Feed & Reply Box */}
+            {/* Right Chat Area */}
             <div className="airbnb-card" style={{ display: "flex", flexDirection: "column", minHeight: "560px" }}>
-              <div style={{ paddingBottom: "14px", borderBottom: "1px solid #e2e8f0", marginBottom: "18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0, color: "var(--airbnb-dark)", display: "flex", alignItems: "center", gap: "8px" }}>
-                  💬 Dedicated Conversation Feed ({activeChatTeam.team_name})
-                </h3>
-                <span style={{ fontSize: "12px", color: "#64748b" }}>
-                  {activeMessages.length} Messages in thread
-                </span>
-              </div>
-
-              {/* Message Feed Container */}
-              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px", paddingRight: "8px" }}>
-                {activeMessages.map((msg) => {
+              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px" }}>
+                {(teamChatMessages[activeChatTeam.id] || []).map((msg) => {
                   const isFaculty = msg.sender_role === "FACULTY";
 
                   return (
-                    <div
-                      key={msg.id}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: isFaculty ? "flex-end" : "flex-start",
-                      }}
-                    >
-                      <div
-                        style={{
-                          display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          marginBottom: "4px",
-                        }}
-                      >
+                    <div key={msg.id} style={{ display: "flex", flexDirection: "column", alignItems: isFaculty ? "flex-end" : "flex-start" }}>
+                      <div style={{ display: "flex", alignItems: "center", gap: "8px", marginBottom: "4px" }}>
                         <span style={{ fontSize: "12px", fontWeight: 800, color: isFaculty ? "#1d4ed8" : "#0f766e" }}>
                           {isFaculty ? `👨‍🏫 ${msg.sender_name} (Guide)` : `👨‍🎓 ${msg.sender_name}`}
                         </span>
                         <span style={{ fontSize: "11px", color: "#94a3b8" }}>{msg.timestamp}</span>
                       </div>
-
                       <div
                         style={{
                           maxWidth: "80%",
@@ -604,7 +1048,6 @@ export function AirbnbFacultyDashboard({
                           border: isFaculty ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
                           fontSize: "14px",
                           lineHeight: "1.5",
-                          boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
                         }}
                       >
                         {msg.message}
@@ -614,41 +1057,18 @@ export function AirbnbFacultyDashboard({
                 })}
               </div>
 
-              {/* New Message Input Form */}
-              <form onSubmit={handleSendChatMessage} style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}>
+              <form onSubmit={(e) => handleSendChatMessage(e, activeChatTeam.id)} style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}>
                 <div style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
                   <div style={{ flex: 1 }}>
                     <textarea
                       rows={2}
-                      placeholder={`Write guidance message or instructions to ${activeChatTeam.team_name}...`}
+                      placeholder={`Write guidance message to ${activeChatTeam.team_name}...`}
                       value={newMessageText}
                       onChange={(e) => setNewMessageText(e.target.value)}
-                      style={{
-                        width: "100%",
-                        padding: "12px 16px",
-                        borderRadius: "12px",
-                        border: "2px solid #cbd5e1",
-                        fontSize: "14px",
-                        outline: "none",
-                      }}
+                      style={{ width: "100%", padding: "12px 16px", borderRadius: "12px", border: "2px solid #cbd5e1", fontSize: "14px" }}
                     />
                   </div>
-
-                  <button
-                    type="submit"
-                    className="btn-primary-pill"
-                    style={{
-                      height: "52px",
-                      padding: "0 24px",
-                      fontSize: "14px",
-                      fontWeight: 800,
-                      background: "#3b82f6",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
+                  <button type="submit" className="btn-primary-pill" style={{ height: "52px", padding: "0 24px", background: "#3b82f6", fontWeight: 800 }}>
                     🚀 Send Message
                   </button>
                 </div>
@@ -658,212 +1078,23 @@ export function AirbnbFacultyDashboard({
         </div>
       )}
 
-      {/* ================= SEPARATE PAGE 2: DEDICATED COORDINATOR PUBLISHED RUBRICS EVALUATION PAGE ================= */}
-      {activeEvalTeamId !== null && activeEvalTeam && (
+      {/* ================= STANDALONE PAGE 2: EVALUATION PAGE DIRECTLY FROM TABLE ================= */}
+      {selectedTeamWorkspaceId === null && activeEvalTeamId !== null && activeEvalTeam && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setActiveEvalTeamId(null)}>
               ← Back to Allotted Teams
             </button>
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
-              <div>
-                <h1 className="full-page-title" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  📊 {activeEvalTeam.team_name} — Coordinator Rubrics Evaluation & Marks Allocation Page
-                </h1>
-                <p className="full-page-desc">
-                  Official GM University Review 3 Rubric Evaluation criteria published by Coordinator. Evaluate and assign marks for <strong>{activeEvalTeam.team_code}</strong>.
-                </p>
-              </div>
-
-              <span className="legend-item" style={{ background: evalForTeam?.submitted ? "#e7f7ef" : "#fff8e6", color: evalForTeam?.submitted ? "#0f8a5f" : "#b7791f", fontWeight: 800, padding: "8px 16px", fontSize: "13px" }}>
-                {evalForTeam?.submitted ? "MARKS SUBMITTED & LOCKED 🟢" : "EVALUATION PENDING ⏳"}
-              </span>
-            </div>
+            <h1 className="full-page-title">📊 {activeEvalTeam.team_name} — Coordinator Published Rubrics Assessment</h1>
+            <p className="full-page-desc">Official GM University Review 3 Rubric Document matrix created & published by Coordinator.</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "24px" }}>
-            {/* Left Sidebar: Team Roster */}
-            <div className="airbnb-card" style={{ height: "fit-content" }}>
-              <div style={{ paddingBottom: "16px", borderBottom: "1px solid #e2e8f0", marginBottom: "16px" }}>
-                <span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2", fontSize: "12px" }}>
-                  Section {activeEvalTeam.section_name} • Semester {activeEvalTeam.semester || 5}
-                </span>
-                <h2 style={{ fontSize: "18px", fontWeight: 800, margin: "8px 0 4px", color: "var(--airbnb-dark)" }}>
-                  {activeEvalTeam.team_name}
-                </h2>
-                <code style={{ fontSize: "13px", color: "#64748b" }}>{activeEvalTeam.team_code}</code>
-              </div>
-
-              <div style={{ marginBottom: "20px" }}>
-                <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748b", fontWeight: 800, marginBottom: "8px" }}>
-                  Assigned Project Title
-                </h3>
-                <p style={{ fontSize: "14px", fontWeight: 700, color: "var(--airbnb-dark)", margin: 0, lineHeight: "1.4" }}>
-                  {activeEvalTeam.project_title}
-                </p>
-              </div>
-
-              <div>
-                <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748b", fontWeight: 800, marginBottom: "12px" }}>
-                  Team Members ({activeEvalTeam.usn_list.split(",").length} Members)
-                </h3>
-                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ padding: "10px 12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                    <div>
-                      <strong style={{ fontSize: "13px", display: "block", color: "var(--airbnb-dark)" }}>
-                        👑 {activeEvalTeam.leader_name}
-                      </strong>
-                      <span style={{ fontSize: "11px", color: "#64748b" }}>Team Leader</span>
-                    </div>
-                  </div>
-
-                  {activeEvalTeam.usn_list.split(",").map((usn, idx) => (
-                    <div key={idx} style={{ padding: "8px 12px", background: "#ffffff", borderRadius: "8px", border: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
-                      <span style={{ fontSize: "12px", fontFamily: "monospace", fontWeight: 700, color: "var(--airbnb-dark)" }}>
-                        🎓 {usn.trim()}
-                      </span>
-                      <span style={{ fontSize: "10px", color: "#94a3b8" }}>Member #{idx + 1}</span>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </div>
-
-            {/* Right Main Area: Dedicated Rubrics Evaluation Form using Coordinator Published Criteria */}
-            <div className="airbnb-card">
-              <div style={{ paddingBottom: "14px", borderBottom: "1px solid #e2e8f0", marginBottom: "20px" }}>
-                <h3 style={{ fontSize: "18px", fontWeight: 800, margin: 0, color: "var(--airbnb-dark)" }}>
-                  Official Coordinator Published Evaluation Rubrics (Review 3 — 20 Marks Total)
-                </h3>
-                <p style={{ margin: "4px 0 0", fontSize: "13px", color: "#64748b" }}>
-                  Evaluate each criterion configured & published by the semester coordinator for <strong>{activeEvalTeam.team_name}</strong>.
-                </p>
-              </div>
-
-              <form onSubmit={(e) => handleSaveTeamEvaluation(e, activeEvalTeam.id)}>
-                <div style={{ display: "flex", flexDirection: "column", gap: "20px", marginBottom: "24px" }}>
-                  {publishedRubrics.map((crit) => {
-                    const currentScore = evalForTeam?.criteriaScores[crit.id] ?? crit.max_marks;
-
-                    return (
-                      <div
-                        key={crit.id}
-                        style={{
-                          background: "#f8fafc",
-                          padding: "20px",
-                          borderRadius: "14px",
-                          border: "1px solid #cbd5e1",
-                        }}
-                      >
-                        <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", marginBottom: "10px" }}>
-                          <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
-                            <span className="action-tag" style={{ background: crit.co_code === "CO5" ? "#e7f3ff" : "#e7f7ef", color: crit.co_code === "CO5" ? "#1877f2" : "#0f8a5f", fontWeight: 800, fontSize: "13px" }}>
-                              {crit.co_code}
-                            </span>
-                            <h4 style={{ fontSize: "16px", fontWeight: 800, margin: 0, color: "var(--airbnb-dark)" }}>
-                              {crit.name}
-                            </h4>
-                          </div>
-
-                          <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
-                            <span style={{ fontSize: "13px", fontWeight: 800, color: "var(--airbnb-dark)" }}>Assign Marks:</span>
-                            <select
-                              value={currentScore}
-                              onChange={(e) => {
-                                const score = Number(e.target.value);
-                                setTeamEvaluations((prev) => {
-                                  const existing = prev[activeEvalTeam.id] || { criteriaScores: {}, co5_marks: 0, co6_marks: 0, remarks: "", submitted: false };
-                                  return {
-                                    ...prev,
-                                    [activeEvalTeam.id]: {
-                                      ...existing,
-                                      criteriaScores: {
-                                        ...existing.criteriaScores,
-                                        [crit.id]: score,
-                                      },
-                                    },
-                                  };
-                                });
-                              }}
-                              style={{
-                                padding: "8px 14px",
-                                fontSize: "15px",
-                                fontWeight: 800,
-                                borderRadius: "10px",
-                                border: "2px solid #3b82f6",
-                                background: "#ffffff",
-                                cursor: "pointer",
-                              }}
-                            >
-                              {[5, 4, 3, 2, 1, 0].map((m) => (
-                                <option key={m} value={m}>
-                                  {m} / {crit.max_marks} Marks
-                                </option>
-                              ))}
-                            </select>
-                          </div>
-                        </div>
-
-                        {/* Level Descriptors Box */}
-                        <div style={{ background: "#ffffff", padding: "12px 16px", borderRadius: "10px", border: "1px solid #e2e8f0", fontSize: "12px", lineHeight: "1.5", color: "#475569" }}>
-                          <strong>Coordinator Criterion Rubric Levels:</strong>
-                          <ul style={{ margin: "4px 0 0", paddingLeft: "18px" }}>
-                            <li><strong>Level 5 (5M):</strong> {crit.level5_desc || "Executes exceptional performance"}</li>
-                            <li><strong>Level 4 (4M):</strong> {crit.level4_desc || "Performs thorough work with minor gaps"}</li>
-                            <li><strong>Level 3 (3M):</strong> {crit.level3_desc || "Conducts effective execution"}</li>
-                            <li><strong>Level 2 (2M):</strong> {crit.level2_desc || "Basic application with limitations"}</li>
-                            <li><strong>Level 1 (1M):</strong> {crit.level1_desc || "Insufficient or minimal attempt"}</li>
-                          </ul>
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
-
-                <div className="modal-field" style={{ marginBottom: "24px" }}>
-                  <label style={{ fontSize: "14px", fontWeight: 800 }}>Faculty Guide Evaluation Remarks & Feedback</label>
-                  <textarea
-                    rows={3}
-                    placeholder={`Enter specific evaluation feedback for ${activeEvalTeam.team_name}...`}
-                    value={evalForTeam?.remarks || ""}
-                    onChange={(e) => {
-                      const text = e.target.value;
-                      setTeamEvaluations((prev) => ({
-                        ...prev,
-                        [activeEvalTeam.id]: {
-                          ...(prev[activeEvalTeam.id] || { criteriaScores: {}, co5_marks: 0, co6_marks: 0, remarks: "", submitted: false }),
-                          remarks: text,
-                        },
-                      }));
-                    }}
-                    style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1px solid #dbdbdb", fontSize: "14px" }}
-                  />
-                </div>
-
-                <div style={{ background: "#e7f7ef", padding: "20px", borderRadius: "14px", border: "1px solid #a7f3d0", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                  <div>
-                    <span style={{ fontSize: "13px", color: "#0f8a5f", fontWeight: 700 }}>Total Calculated Rubric Score for {activeEvalTeam.team_code}</span>
-                    <h2 style={{ fontSize: "36px", fontWeight: 900, color: "#0f8a5f", margin: "2px 0 0" }}>
-                      {calculateTotalScore(activeEvalTeam.id)} / 20 Marks
-                    </h2>
-                  </div>
-
-                  <button
-                    type="submit"
-                    className="btn-primary-pill"
-                    style={{ height: "52px", padding: "0 32px", fontSize: "15px", fontWeight: 800, background: "#10b981" }}
-                  >
-                    💾 Submit & Lock Marks for {activeEvalTeam.team_name}
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
+          {renderOfficialCoordinatorRubricDocument(activeEvalTeam)}
         </div>
       )}
 
       {/* ================= VIEW 1: FACULTY DASHBOARD HOME ================= */}
-      {activeChatTeamId === null && activeEvalTeamId === null && currentView === "home" && (
+      {selectedTeamWorkspaceId === null && activeChatTeamId === null && activeEvalTeamId === null && currentView === "home" && (
         <div className="airbnb-container">
           <div className="welcome-banner">
             <div>
@@ -1032,7 +1263,7 @@ export function AirbnbFacultyDashboard({
                       <tr key={t.id}>
                         <td><code>{t.team_code}</code></td>
                         <td>
-                          <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => setActiveChatTeamId(t.id)}>
+                          <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => { setSelectedTeamWorkspaceId(t.id); setTeamSubView("hub"); }}>
                             {t.team_name}
                           </strong>
                           <span style={{ display: "block", fontSize: "12px", color: "var(--airbnb-gray)" }}>
@@ -1092,7 +1323,7 @@ export function AirbnbFacultyDashboard({
       )}
 
       {/* ================= VIEW 2: MY PUBLISHED PROJECTS ================= */}
-      {activeChatTeamId === null && activeEvalTeamId === null && currentView === "myProjects" && (
+      {selectedTeamWorkspaceId === null && activeChatTeamId === null && activeEvalTeamId === null && currentView === "myProjects" && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setCurrentView("home")}>
@@ -1300,7 +1531,7 @@ export function AirbnbFacultyDashboard({
       )}
 
       {/* ================= VIEW 3: ALLOTTED TEAMS BY SEMESTER ================= */}
-      {activeChatTeamId === null && activeEvalTeamId === null && currentView === "allottedTeams" && (
+      {selectedTeamWorkspaceId === null && activeChatTeamId === null && activeEvalTeamId === null && currentView === "allottedTeams" && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setCurrentView("home")}>
@@ -1377,7 +1608,7 @@ export function AirbnbFacultyDashboard({
                       <tr key={t.id}>
                         <td><code>{t.team_code}</code></td>
                         <td>
-                          <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => setActiveChatTeamId(t.id)}>
+                          <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => { setSelectedTeamWorkspaceId(t.id); setTeamSubView("hub"); }}>
                             {t.team_name}
                           </strong>
                           <span style={{ display: "block", fontSize: "12px", color: "var(--airbnb-gray)" }}>
@@ -1437,7 +1668,7 @@ export function AirbnbFacultyDashboard({
       )}
 
       {/* ================= VIEW 4: MENTEE STUDENT TEAMS ================= */}
-      {activeChatTeamId === null && activeEvalTeamId === null && currentView === "menteeTeams" && (
+      {selectedTeamWorkspaceId === null && activeChatTeamId === null && activeEvalTeamId === null && currentView === "menteeTeams" && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setCurrentView("home")}>
@@ -1466,7 +1697,7 @@ export function AirbnbFacultyDashboard({
                     <tr key={t.id}>
                       <td><code>{t.team_code}</code></td>
                       <td>
-                        <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => setActiveChatTeamId(t.id)}>
+                        <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => { setSelectedTeamWorkspaceId(t.id); setTeamSubView("hub"); }}>
                           {t.team_name}
                         </strong>
                         <span style={{ display: "block", fontSize: "12px", color: "var(--airbnb-gray)" }}>Leader: {t.leader_name}</span>
@@ -1505,7 +1736,7 @@ export function AirbnbFacultyDashboard({
       )}
 
       {/* ================= VIEW 5: APPLICATIONS REVIEW ================= */}
-      {activeChatTeamId === null && activeEvalTeamId === null && currentView === "applications" && (
+      {selectedTeamWorkspaceId === null && activeChatTeamId === null && activeEvalTeamId === null && currentView === "applications" && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setCurrentView("home")}>
@@ -1583,90 +1814,17 @@ export function AirbnbFacultyDashboard({
       )}
 
       {/* ================= VIEW 6: GLOBAL EVALUATION & MARK SUBMISSION ================= */}
-      {activeChatTeamId === null && activeEvalTeamId === null && currentView === "evaluations" && (
+      {selectedTeamWorkspaceId === null && activeChatTeamId === null && activeEvalTeamId === null && currentView === "evaluations" && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setCurrentView("home")}>
               ← Back to Dashboard
             </button>
             <h1 className="full-page-title">📊 Review 3 Rubric Evaluation & Mark Submission</h1>
-            <p className="full-page-desc">Grade mentee student teams using the official GM University Review 3 Rubric format (20 Marks Total).</p>
+            <p className="full-page-desc">Grade mentee student teams using the official GM University Rubric Document format (20 Marks Total).</p>
           </div>
 
-          <div style={{ display: "grid", gridTemplateColumns: "1fr 400px", gap: "24px" }}>
-            {/* Left: Evaluation Form */}
-            <div className="airbnb-card">
-              <h2 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "18px" }}>Review 3 Evaluation Form</h2>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const team = menteeTeams.find((t) => t.id === Number(selectedTeamId));
-                showToast(`Submitted Review 3 evaluation marks for Team ${team?.team_name || "Falcon CS-A1"}!`);
-              }}>
-                <div className="modal-field">
-                  <label>Select Mentee Team to Grade</label>
-                  <select
-                    value={selectedTeamId}
-                    onChange={(e) => setSelectedTeamId(Number(e.target.value))}
-                  >
-                    {menteeTeams.map((t) => (
-                      <option key={t.id} value={t.id}>
-                        {t.team_code} - {t.team_name} (Section {t.section_name})
-                      </option>
-                    ))}
-                  </select>
-                </div>
-
-                <div style={{ background: "#f8fafc", padding: "18px", borderRadius: "12px", border: "1px solid #e2e8f0", marginBottom: "18px" }}>
-                  <h3 style={{ fontSize: "15px", fontWeight: 800, margin: "0 0 12px", color: "var(--airbnb-dark)" }}>
-                    Coordinator Published Evaluation Rubric Criteria (Official GM University Review 3)
-                  </h3>
-
-                  {publishedRubrics.map((crit) => (
-                    <div key={crit.id} className="modal-field" style={{ marginBottom: "12px" }}>
-                      <label style={{ fontSize: "13px", fontWeight: 700 }}>{crit.co_code}: {crit.name} (Max {crit.max_marks} Marks)</label>
-                      <select style={{ width: "100%", padding: "8px 12px" }}>
-                        {[5, 4, 3, 2, 1, 0].map((m) => (
-                          <option key={m} value={m}>{m} / {crit.max_marks} Marks</option>
-                        ))}
-                      </select>
-                    </div>
-                  ))}
-                </div>
-
-                <div className="modal-field">
-                  <label>Faculty Guide Remarks & Feedback</label>
-                  <textarea
-                    rows={3}
-                    placeholder="Enter specific evaluation remarks..."
-                    style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #dbdbdb" }}
-                  />
-                </div>
-
-                <button type="submit" className="btn-primary-pill" style={{ width: "100%", height: "48px" }}>
-                  💾 Submit Review 3 Evaluation Marks
-                </button>
-              </form>
-            </div>
-
-            {/* Right: Summary Card */}
-            <div className="airbnb-card">
-              <h2 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "18px" }}>Grading Summary</h2>
-              <div style={{ background: "#e7f7ef", padding: "20px", borderRadius: "14px", border: "1px solid #a7f3d0", marginBottom: "20px" }}>
-                <span style={{ fontSize: "13px", color: "#0f8a5f", fontWeight: 700 }}>Total Calculated Score</span>
-                <h2 style={{ fontSize: "36px", fontWeight: 900, color: "#0f8a5f", margin: "4px 0" }}>
-                  18 / 20 Marks
-                </h2>
-                <span style={{ fontSize: "12px", color: "#0f8a5f" }}>Coordinator Rubric Criteria Applied 🟢</span>
-              </div>
-
-              <div style={{ fontSize: "13px", lineHeight: "1.6", color: "var(--airbnb-dark)" }}>
-                <p><strong>Assessment:</strong> Review 3 Final Evaluation</p>
-                <p><strong>Institution:</strong> GM University • CSE Dept</p>
-                <p><strong>Guide:</strong> {displayName}</p>
-                <p><strong>Evaluation Status:</strong> Ready to Submit 🟢</p>
-              </div>
-            </div>
-          </div>
+          {renderOfficialCoordinatorRubricDocument(menteeTeams.find((t) => t.id === Number(selectedTeamId)) || menteeTeams[0])}
         </div>
       )}
     </div>

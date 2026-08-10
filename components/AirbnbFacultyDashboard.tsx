@@ -35,6 +35,14 @@ export interface ApplicationItem {
   status: string;
 }
 
+export interface TeamMessage {
+  id: number;
+  sender_name: string;
+  sender_role: "FACULTY" | "STUDENT";
+  message: string;
+  timestamp: string;
+}
+
 interface AirbnbFacultyDashboardProps {
   displayName: string;
   myProjects: ProjectItem[];
@@ -65,6 +73,69 @@ export function AirbnbFacultyDashboard({
   // Selected Semester for Allotted Teams view
   const [selectedAllottedSem, setSelectedAllottedSem] = useState<number>(5);
 
+  // Active Team Conversation State (null when not chatting, or team ID when viewing team conversation)
+  const [activeChatTeamId, setActiveChatTeamId] = useState<number | null>(null);
+  const [newMessageText, setNewMessageText] = useState("");
+
+  // Sample initial team chat conversations indexed by team ID
+  const [teamChatMessages, setTeamChatMessages] = useState<Record<number, TeamMessage[]>>({
+    1: [
+      {
+        id: 1,
+        sender_name: "Student 001 (Leader)",
+        sender_role: "STUDENT",
+        message: "Good morning Sir! We completed the database schema and API integration for Review 3. Could you please review our draft?",
+        timestamp: "Today, 10:15 AM",
+      },
+      {
+        id: 2,
+        sender_name: displayName,
+        sender_role: "FACULTY",
+        message: "Great progress team! Make sure to include CO5 test cases and system performance benchmarks before Review 3 presentation.",
+        timestamp: "Today, 10:45 AM",
+      },
+      {
+        id: 3,
+        sender_name: "Student 002",
+        sender_role: "STUDENT",
+        message: "Yes Sir, we have added test scripts for 100 concurrent requests and generated response time graphs.",
+        timestamp: "Today, 11:20 AM",
+      },
+    ],
+    2: [
+      {
+        id: 1,
+        sender_name: displayName,
+        sender_role: "FACULTY",
+        message: "Team CS-B2, please submit your Review 3 slides by tomorrow 5 PM.",
+        timestamp: "Yesterday, 3:30 PM",
+      },
+      {
+        id: 2,
+        sender_name: "Student 005 (Leader)",
+        sender_role: "STUDENT",
+        message: "Noted Sir! We are finalizing the architecture diagrams and will upload the slides shortly.",
+        timestamp: "Yesterday, 4:10 PM",
+      },
+    ],
+    3: [
+      {
+        id: 1,
+        sender_name: "Aarav Sharma (Leader)",
+        sender_role: "STUDENT",
+        message: "Respected Guide, we have set up the ESP32 sensors for our Smart Campus project.",
+        timestamp: "2 days ago",
+      },
+      {
+        id: 2,
+        sender_name: displayName,
+        sender_role: "FACULTY",
+        message: "Excellent! Test the real-time MQTT payload transmission to the dashboard.",
+        timestamp: "Yesterday",
+      },
+    ],
+  });
+
   // New Project Form State
   const [title, setTitle] = useState("");
   const [domain, setDomain] = useState("Web Engineering");
@@ -89,6 +160,29 @@ export function AirbnbFacultyDashboard({
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
     setTimeout(() => setToast(null), 4000);
+  };
+
+  // Handler: Send Message in Team Conversation Room
+  const handleSendChatMessage = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newMessageText.trim() || activeChatTeamId === null) return;
+
+    const newMsg: TeamMessage = {
+      id: Date.now(),
+      sender_name: displayName,
+      sender_role: "FACULTY",
+      message: newMessageText.trim(),
+      timestamp: "Just now",
+    };
+
+    setTeamChatMessages((prev) => ({
+      ...prev,
+      [activeChatTeamId]: [...(prev[activeChatTeamId] || []), newMsg],
+    }));
+
+    const activeTeam = menteeTeams.find((t) => t.id === activeChatTeamId);
+    showToast(`Sent guidance message to ${activeTeam?.team_name || "Team"}!`);
+    setNewMessageText("");
   };
 
   // Publish New Project
@@ -220,6 +314,9 @@ export function AirbnbFacultyDashboard({
     return Number(t.semester) === Number(selectedAllottedSem);
   });
 
+  const activeChatTeam = menteeTeams.find((t) => t.id === activeChatTeamId);
+  const activeMessages = activeChatTeamId ? teamChatMessages[activeChatTeamId] || [] : [];
+
   return (
     <div className="airbnb-admin-root">
       {/* Toast Notification */}
@@ -241,11 +338,14 @@ export function AirbnbFacultyDashboard({
           </div>
 
           <div className="airbnb-header-right">
-            {currentView !== "home" && (
+            {(currentView !== "home" || activeChatTeamId !== null) && (
               <button
                 className="action-pill-btn"
                 style={{ background: "#f0f2f5", color: "#1c1e21", border: "1px solid #dbdbdb" }}
-                onClick={() => setCurrentView("home")}
+                onClick={() => {
+                  setActiveChatTeamId(null);
+                  setCurrentView("home");
+                }}
               >
                 ← Back to Dashboard
               </button>
@@ -284,8 +384,188 @@ export function AirbnbFacultyDashboard({
         </div>
       </header>
 
+      {/* ================= VIEW: DEDICATED TEAM CONVERSATION ROOM PAGE ================= */}
+      {activeChatTeamId !== null && activeChatTeam && (
+        <div className="airbnb-container">
+          <div className="full-page-header">
+            <button className="back-btn-pill" onClick={() => setActiveChatTeamId(null)}>
+              ← Back to Faculty Dashboard
+            </button>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
+              <div>
+                <h1 className="full-page-title" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+                  💬 {activeChatTeam.team_name} — Team Guidance Room
+                </h1>
+                <p className="full-page-desc">
+                  Direct conversation and project mentorship room between Guide <strong>{displayName}</strong> and team members.
+                </p>
+              </div>
+
+              <span className="status-badge-active" style={{ fontSize: "13px", padding: "8px 16px" }}>
+                🟢 Live Guidance Active
+              </span>
+            </div>
+          </div>
+
+          <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "24px" }}>
+            {/* Left Sidebar: Team Details & Member Roster */}
+            <div className="airbnb-card" style={{ height: "fit-content" }}>
+              <div style={{ paddingBottom: "16px", borderBottom: "1px solid #e2e8f0", marginBottom: "16px" }}>
+                <span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2", fontSize: "12px" }}>
+                  Section {activeChatTeam.section_name} • Semester {activeChatTeam.semester || 5}
+                </span>
+                <h2 style={{ fontSize: "18px", fontWeight: 800, margin: "8px 0 4px", color: "var(--airbnb-dark)" }}>
+                  {activeChatTeam.team_name}
+                </h2>
+                <code style={{ fontSize: "13px", color: "#64748b" }}>{activeChatTeam.team_code}</code>
+              </div>
+
+              <div style={{ marginBottom: "20px" }}>
+                <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748b", fontWeight: 800, marginBottom: "8px" }}>
+                  Assigned Project Title
+                </h3>
+                <p style={{ fontSize: "14px", fontWeight: 700, color: "var(--airbnb-dark)", margin: 0, lineHeight: "1.4" }}>
+                  {activeChatTeam.project_title}
+                </p>
+              </div>
+
+              <div>
+                <h3 style={{ fontSize: "13px", textTransform: "uppercase", letterSpacing: "0.5px", color: "#64748b", fontWeight: 800, marginBottom: "12px" }}>
+                  Team Members ({activeChatTeam.usn_list.split(",").length} Members)
+                </h3>
+                <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                  <div style={{ padding: "10px 12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyBetween: "space-between" }}>
+                    <div>
+                      <strong style={{ fontSize: "13px", display: "block", color: "var(--airbnb-dark)" }}>
+                        👑 {activeChatTeam.leader_name}
+                      </strong>
+                      <span style={{ fontSize: "11px", color: "#64748b" }}>Team Leader</span>
+                    </div>
+                    <span style={{ fontSize: "11px", background: "#e7f7ef", color: "#0f8a5f", padding: "2px 8px", borderRadius: "10px", fontWeight: 700, marginLeft: "auto" }}>
+                      ONLINE
+                    </span>
+                  </div>
+
+                  {activeChatTeam.usn_list.split(",").map((usn, idx) => (
+                    <div key={idx} style={{ padding: "8px 12px", background: "#ffffff", borderRadius: "8px", border: "1px solid #f1f5f9", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
+                      <span style={{ fontSize: "12px", fontFamily: "monospace", fontWeight: 700, color: "var(--airbnb-dark)" }}>
+                        🎓 {usn.trim()}
+                      </span>
+                      <span style={{ fontSize: "10px", color: "#94a3b8" }}>Member #{idx + 1}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+
+            {/* Right Main Area: Conversation Feed & Reply Box */}
+            <div className="airbnb-card" style={{ display: "flex", flexDirection: "column", minHeight: "560px" }}>
+              <div style={{ paddingBottom: "14px", borderBottom: "1px solid #e2e8f0", marginBottom: "18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0, color: "var(--airbnb-dark)", display: "flex", alignItems: "center", gap: "8px" }}>
+                  💬 Guide & Team Conversation Feed
+                </h3>
+                <span style={{ fontSize: "12px", color: "#64748b" }}>
+                  {activeMessages.length} Messages in thread
+                </span>
+              </div>
+
+              {/* Message Feed Container */}
+              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px", paddingRight: "8px" }}>
+                {activeMessages.map((msg) => {
+                  const isFaculty = msg.sender_role === "FACULTY";
+
+                  return (
+                    <div
+                      key={msg.id}
+                      style={{
+                        display: "flex",
+                        flexDirection: "column",
+                        alignItems: isFaculty ? "flex-end" : "flex-start",
+                      }}
+                    >
+                      <div
+                        style={{
+                          display: "flex",
+                          alignItems: "center",
+                          gap: "8px",
+                          marginBottom: "4px",
+                        }}
+                      >
+                        <span style={{ fontSize: "12px", fontWeight: 800, color: isFaculty ? "#1d4ed8" : "#0f766e" }}>
+                          {isFaculty ? `👨‍🏫 ${msg.sender_name} (Guide)` : `👨‍🎓 ${msg.sender_name}`}
+                        </span>
+                        <span style={{ fontSize: "11px", color: "#94a3b8" }}>{msg.timestamp}</span>
+                      </div>
+
+                      <div
+                        style={{
+                          maxWidth: "80%",
+                          padding: "14px 18px",
+                          borderRadius: isFaculty ? "18px 18px 2px 18px" : "18px 18px 18px 2px",
+                          background: isFaculty ? "#eff6ff" : "#f8fafc",
+                          color: "var(--airbnb-dark)",
+                          border: isFaculty ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
+                          fontSize: "14px",
+                          lineHeight: "1.5",
+                          boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+                        }}
+                      >
+                        {msg.message}
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* New Message Input Form */}
+              <form onSubmit={handleSendChatMessage} style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}>
+                <div style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
+                  <div style={{ flex: 1 }}>
+                    <textarea
+                      rows={2}
+                      placeholder={`Write guidance message or instructions to ${activeChatTeam.team_name}...`}
+                      value={newMessageText}
+                      onChange={(e) => setNewMessageText(e.target.value)}
+                      style={{
+                        width: "100%",
+                        padding: "12px 16px",
+                        borderRadius: "12px",
+                        border: "2px solid #cbd5e1",
+                        fontSize: "14px",
+                        outline: "none",
+                        transition: "border-color 0.2s",
+                      }}
+                      onFocus={(e) => (e.target.style.borderColor = "#3b82f6")}
+                      onBlur={(e) => (e.target.style.borderColor = "#cbd5e1")}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="btn-primary-pill"
+                    style={{
+                      height: "52px",
+                      padding: "0 24px",
+                      fontSize: "14px",
+                      fontWeight: 800,
+                      background: "#3b82f6",
+                      display: "flex",
+                      alignItems: "center",
+                      gap: "8px",
+                      whiteSpace: "nowrap",
+                    }}
+                  >
+                    🚀 Send Message
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* ================= VIEW 1: FACULTY DASHBOARD HOME ================= */}
-      {currentView === "home" && (
+      {activeChatTeamId === null && currentView === "home" && (
         <div className="airbnb-container">
           <div className="welcome-banner">
             <div>
@@ -351,12 +631,11 @@ export function AirbnbFacultyDashboard({
                 <div className="action-arrow">→</div>
               </div>
 
-
               <div className="vertical-action-card green-theme" onClick={() => setCurrentView("menteeTeams")}>
                 <div className="action-icon-box green">👥</div>
                 <div className="action-text-box">
                   <div className="action-card-title">Assigned Mentee Student Teams</div>
-                  <div className="action-card-sub">View student team rosters, USNs, and assigned project titles</div>
+                  <div className="action-card-sub">View student team rosters, USNs, and open team chat rooms</div>
                 </div>
                 <div className="action-arrow">→</div>
               </div>
@@ -447,6 +726,7 @@ export function AirbnbFacultyDashboard({
                       <th>Class Section</th>
                       <th>Allotted Project Title</th>
                       <th>Status</th>
+                      <th style={{ width: "160px", textAlign: "right" }}>Guide Conversation</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -454,7 +734,9 @@ export function AirbnbFacultyDashboard({
                       <tr key={t.id}>
                         <td><code>{t.team_code}</code></td>
                         <td>
-                          <strong>{t.team_name}</strong>
+                          <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => setActiveChatTeamId(t.id)}>
+                            {t.team_name}
+                          </strong>
                           <span style={{ display: "block", fontSize: "12px", color: "var(--airbnb-gray)" }}>
                             Leader: {t.leader_name}
                           </span>
@@ -470,6 +752,16 @@ export function AirbnbFacultyDashboard({
                           <span className="legend-item" style={{ background: "#e7f7ef", color: "#0f8a5f", fontWeight: 800 }}>
                             {t.status} 🟢
                           </span>
+                        </td>
+                        <td style={{ textAlign: "right" }}>
+                          <button
+                            type="button"
+                            className="btn-primary-pill"
+                            style={{ padding: "6px 14px", fontSize: "12px", background: "#3b82f6" }}
+                            onClick={() => setActiveChatTeamId(t.id)}
+                          >
+                            💬 Open Chat Room
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -492,7 +784,7 @@ export function AirbnbFacultyDashboard({
       )}
 
       {/* ================= VIEW 2: MY PUBLISHED PROJECTS ================= */}
-      {currentView === "myProjects" && (
+      {activeChatTeamId === null && currentView === "myProjects" && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setCurrentView("home")}>
@@ -700,7 +992,7 @@ export function AirbnbFacultyDashboard({
       )}
 
       {/* ================= VIEW 3: ALLOTTED TEAMS BY SEMESTER ================= */}
-      {currentView === "allottedTeams" && (
+      {activeChatTeamId === null && currentView === "allottedTeams" && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setCurrentView("home")}>
@@ -769,6 +1061,7 @@ export function AirbnbFacultyDashboard({
                       <th>Class Section</th>
                       <th>Allotted Project Title</th>
                       <th>Status</th>
+                      <th style={{ width: "160px", textAlign: "right" }}>Guide Conversation</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -776,7 +1069,9 @@ export function AirbnbFacultyDashboard({
                       <tr key={t.id}>
                         <td><code>{t.team_code}</code></td>
                         <td>
-                          <strong>{t.team_name}</strong>
+                          <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => setActiveChatTeamId(t.id)}>
+                            {t.team_name}
+                          </strong>
                           <span style={{ display: "block", fontSize: "12px", color: "var(--airbnb-gray)" }}>
                             Leader: {t.leader_name}
                           </span>
@@ -793,6 +1088,16 @@ export function AirbnbFacultyDashboard({
                             {t.status} 🟢
                           </span>
                         </td>
+                        <td style={{ textAlign: "right" }}>
+                          <button
+                            type="button"
+                            className="btn-primary-pill"
+                            style={{ padding: "6px 14px", fontSize: "12px", background: "#3b82f6" }}
+                            onClick={() => setActiveChatTeamId(t.id)}
+                          >
+                            💬 Open Chat Room
+                          </button>
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -805,7 +1110,7 @@ export function AirbnbFacultyDashboard({
                   No Teams Allotted for Semester {selectedAllottedSem} Yet
                 </h3>
                 <p style={{ margin: 0, fontSize: "13px", color: "var(--airbnb-gray)" }}>
-                  Select another semester above or check back when the coordinator finalizes team allocations.
+                  Select another semester from the dropdown above to view assigned mentee teams.
                 </p>
               </div>
             )}
@@ -814,7 +1119,7 @@ export function AirbnbFacultyDashboard({
       )}
 
       {/* ================= VIEW 4: MENTEE STUDENT TEAMS ================= */}
-      {currentView === "menteeTeams" && (
+      {activeChatTeamId === null && currentView === "menteeTeams" && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setCurrentView("home")}>
@@ -835,6 +1140,7 @@ export function AirbnbFacultyDashboard({
                     <th>Section</th>
                     <th>Assigned Project Title</th>
                     <th>Status</th>
+                    <th style={{ width: "160px", textAlign: "right" }}>Guide Conversation</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -842,13 +1148,25 @@ export function AirbnbFacultyDashboard({
                     <tr key={t.id}>
                       <td><code>{t.team_code}</code></td>
                       <td>
-                        <strong>{t.team_name}</strong>
+                        <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => setActiveChatTeamId(t.id)}>
+                          {t.team_name}
+                        </strong>
                         <span style={{ display: "block", fontSize: "12px", color: "var(--airbnb-gray)" }}>Leader: {t.leader_name}</span>
                       </td>
                       <td><code>{t.usn_list}</code></td>
                       <td><span className="action-tag" style={{ background: "#e7f3ff", color: "#1877f2" }}>Section {t.section_name}</span></td>
                       <td><strong>{t.project_title}</strong></td>
                       <td><span className="legend-item" style={{ background: "#e7f7ef", color: "#0f8a5f", fontWeight: 800 }}>{t.status} 🟢</span></td>
+                      <td style={{ textAlign: "right" }}>
+                        <button
+                          type="button"
+                          className="btn-primary-pill"
+                          style={{ padding: "6px 14px", fontSize: "12px", background: "#3b82f6" }}
+                          onClick={() => setActiveChatTeamId(t.id)}
+                        >
+                          💬 Open Chat Room
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -859,7 +1177,7 @@ export function AirbnbFacultyDashboard({
       )}
 
       {/* ================= VIEW 5: APPLICATIONS REVIEW ================= */}
-      {currentView === "applications" && (
+      {activeChatTeamId === null && currentView === "applications" && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setCurrentView("home")}>
@@ -937,7 +1255,7 @@ export function AirbnbFacultyDashboard({
       )}
 
       {/* ================= VIEW 6: EVALUATION & MARK SUBMISSION ================= */}
-      {currentView === "evaluations" && (
+      {activeChatTeamId === null && currentView === "evaluations" && (
         <div className="airbnb-container">
           <div className="full-page-header">
             <button className="back-btn-pill" onClick={() => setCurrentView("home")}>

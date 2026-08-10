@@ -517,9 +517,9 @@ export function AirbnbFacultyDashboard({
                     <td style={{ border: "1px solid #000", padding: "8px", background: ratio > 0 && ratio < 0.25 ? "#dcfce7" : "transparent" }}>
                       <span style={{ fontSize: "11px" }}>{c.level1_desc || `Shows limited ${c.name}`}</span>
                     </td>
-                    {/* MANUAL NUMBER INPUT CELL (No dropdown!) */}
+                    {/* MANUAL NUMBER INPUT CELL (Clean input without spin arrows and without out of total text) */}
                     <td style={{ border: "1px solid #000", padding: "10px 8px", background: "#f0f9ff", textAlign: "center" }}>
-                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                      <div style={{ display: "flex", justifyContent: "center" }}>
                         <input
                           type="number"
                           min="0"
@@ -539,7 +539,7 @@ export function AirbnbFacultyDashboard({
                             }));
                           }}
                           style={{
-                            width: "72px",
+                            width: "70px",
                             padding: "8px",
                             fontSize: "16px",
                             fontWeight: 900,
@@ -548,11 +548,11 @@ export function AirbnbFacultyDashboard({
                             border: "2px solid #2563eb",
                             background: "#ffffff",
                             outline: "none",
+                            WebkitAppearance: "none",
+                            MozAppearance: "textfield",
+                            appearance: "none",
                           }}
                         />
-                        <span style={{ fontSize: "11px", fontWeight: 800, color: "#475569" }}>
-                          / {c.max_marks} Marks
-                        </span>
                       </div>
                     </td>
                   </tr>

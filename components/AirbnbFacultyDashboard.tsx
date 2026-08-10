@@ -388,6 +388,63 @@ export function AirbnbFacultyDashboard({
               </div>
             </div>
           </div>
+
+          {/* Standalone Separate Section Card: Allotted Teams by Semester */}
+          <div className="airbnb-card vertical-actions-section" style={{ marginTop: "28px" }}>
+            <div className="timeline-header" style={{ marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+              <div>
+                <h2 className="timeline-title" style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+                  🏆 Allotted Teams by Semester
+                </h2>
+                <p className="timeline-desc">
+                  Select a semester below to open its dedicated page and view all mentee teams assigned under your supervision.
+                </p>
+              </div>
+
+              <button
+                type="button"
+                className="btn-secondary-pill"
+                style={{ padding: "8px 20px", fontSize: "13px", fontWeight: 800 }}
+                onClick={() => setCurrentView("allottedTeams")}
+              >
+                Explore All Semesters →
+              </button>
+            </div>
+
+            {/* Semester Quick Selector Buttons Grid */}
+            <div style={{ display: "grid", gridTemplateColumns: "repeat(auto-fit, minmax(130px, 1fr))", gap: "12px" }}>
+              {[1, 2, 3, 4, 5, 6, 7, 8].map((sem) => {
+                const countForSem = menteeTeams.filter((t) => (t.semester || 5) === sem).length;
+
+                return (
+                  <button
+                    key={sem}
+                    type="button"
+                    style={{
+                      background: "#f8fafc",
+                      border: "1px solid #cbd5e1",
+                      borderRadius: "14px",
+                      padding: "16px 12px",
+                      textAlign: "center",
+                      cursor: "pointer",
+                      transition: "all 0.2s ease",
+                    }}
+                    onClick={() => {
+                      setSelectedAllottedSem(sem);
+                      setCurrentView("allottedTeams");
+                    }}
+                  >
+                    <div style={{ fontSize: "16px", fontWeight: 800, color: "var(--airbnb-dark)", marginBottom: "4px" }}>
+                      Semester {sem}
+                    </div>
+                    <div style={{ fontSize: "12px", color: countForSem > 0 ? "#0f8a5f" : "var(--airbnb-gray)", fontWeight: 700 }}>
+                      {countForSem > 0 ? `🟢 ${countForSem} Teams` : "⚪ 0 Teams"}
+                    </div>
+                  </button>
+                );
+              })}
+            </div>
+          </div>
         </div>
       )}
 

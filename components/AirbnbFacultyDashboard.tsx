@@ -56,7 +56,7 @@ export interface RubricCriterion {
 }
 
 export interface TeamEvaluationRecord {
-  criteriaScores: Record<number, number>; // criterionId -> score (0-5)
+  criteriaScores: Record<number, number>; // criterionId -> score (0 to max_marks)
   co5_marks: number;
   co6_marks: number;
   remarks: string;
@@ -171,25 +171,25 @@ export function AirbnbFacultyDashboard({
   // Per-Team Rubrics Evaluation State indexed by team ID
   const [teamEvaluations, setTeamEvaluations] = useState<Record<number, TeamEvaluationRecord>>({
     1: {
-      criteriaScores: { 1: 5, 2: 4, 3: 5, 4: 4 },
-      co5_marks: 9,
-      co6_marks: 9,
+      criteriaScores: { 1: 9, 2: 8, 3: 9, 4: 8 },
+      co5_marks: 17,
+      co6_marks: 17,
       remarks: "Excellent CO5 testing analysis and CO6 demonstration.",
       submitted: true,
       updated_at: "Today",
     },
     2: {
-      criteriaScores: { 1: 4, 2: 4, 3: 4, 4: 4 },
-      co5_marks: 8,
-      co6_marks: 8,
+      criteriaScores: { 1: 8, 2: 8, 3: 8, 4: 7 },
+      co5_marks: 16,
+      co6_marks: 15,
       remarks: "Good implementation. Minor fixes required in reporting.",
       submitted: false,
       updated_at: "Pending",
     },
     3: {
-      criteriaScores: { 1: 5, 2: 5, 3: 5, 4: 4 },
-      co5_marks: 10,
-      co6_marks: 9,
+      criteriaScores: { 1: 10, 2: 9, 3: 9, 4: 9 },
+      co5_marks: 19,
+      co6_marks: 18,
       remarks: "Flawless hardware prototype and clear future scope.",
       submitted: false,
       updated_at: "Pending",
@@ -247,9 +247,9 @@ export function AirbnbFacultyDashboard({
     e.preventDefault();
     const activeTeam = menteeTeams.find((t) => t.id === teamId);
     const evalData = teamEvaluations[teamId] || {
-      criteriaScores: { 1: 4, 2: 4, 3: 4, 4: 4 },
-      co5_marks: 8,
-      co6_marks: 8,
+      criteriaScores: { 1: 8, 2: 8, 3: 8, 4: 8 },
+      co5_marks: 16,
+      co6_marks: 16,
       remarks: "Good performance.",
       submitted: true,
     };
@@ -258,7 +258,7 @@ export function AirbnbFacultyDashboard({
     let calcCo5 = 0;
     let calcCo6 = 0;
     publishedRubrics.forEach((crit) => {
-      const score = evalData.criteriaScores[crit.id] ?? crit.max_marks;
+      const score = evalData.criteriaScores[crit.id] ?? Math.round(crit.max_marks * 0.8);
       if (crit.co_code === "CO5") calcCo5 += score;
       if (crit.co_code === "CO6") calcCo6 += score;
     });
@@ -276,7 +276,7 @@ export function AirbnbFacultyDashboard({
       },
     }));
 
-    showToast(`Submitted & Locked Review 3 Rubric Marks (${totalMarks}/20 Marks) for ${activeTeam?.team_name || "Team"}!`);
+    showToast(`Submitted & Locked Review 3 Rubric Marks (${totalMarks} Marks) for ${activeTeam?.team_name || "Team"}!`);
 
     try {
       await fetch("/api/faculty", {
@@ -405,25 +405,36 @@ export function AirbnbFacultyDashboard({
   const activeChatTeam = menteeTeams.find((t) => t.id === activeChatTeamId);
   const activeEvalTeam = menteeTeams.find((t) => t.id === activeEvalTeamId);
 
-  // Helper function to render the exact Official GM University Coordinator Rubrics Table Document
+  // Helper function to render the exact Official GM University Coordinator Rubrics Table Document with Manual Number Inputs
   const renderOfficialCoordinatorRubricDocument = (team: MenteeTeamItem) => {
     const evalData = teamEvaluations[team.id] || {
-      criteriaScores: { 1: 5, 2: 4, 3: 5, 4: 4 },
-      co5_marks: 9,
-      co6_marks: 9,
+      criteriaScores: { 1: 9, 2: 8, 3: 9, 4: 8 },
+      co5_marks: 17,
+      co6_marks: 17,
       remarks: "Excellent performance across CO5 and CO6 criteria.",
       submitted: false,
     };
 
-    // Calculate dynamic total score
+    // Calculate dynamic total score & max total score
     let totalScore = 0;
+    let maxTotalMarks = 0;
     let co5Score = 0;
+    let co5Max = 0;
     let co6Score = 0;
+    let co6Max = 0;
+
     publishedRubrics.forEach((crit) => {
-      const score = evalData.criteriaScores[crit.id] ?? crit.max_marks;
+      const score = evalData.criteriaScores[crit.id] ?? Math.round(crit.max_marks * 0.8);
       totalScore += score;
-      if (crit.co_code === "CO5") co5Score += score;
-      if (crit.co_code === "CO6") co6Score += score;
+      maxTotalMarks += crit.max_marks;
+      if (crit.co_code === "CO5") {
+        co5Score += score;
+        co5Max += crit.max_marks;
+      }
+      if (crit.co_code === "CO6") {
+        co6Score += score;
+        co6Max += crit.max_marks;
+      }
     });
 
     return (
@@ -444,7 +455,7 @@ export function AirbnbFacultyDashboard({
             PROJECT-BASED LEARNING (PBL) ASSESSMENT – Review 3
           </h2>
           <p style={{ fontSize: "13px", fontWeight: 800, textTransform: "uppercase", margin: 0 }}>
-            COORDINATOR PUBLISHED RUBRIC FOR PROJECT-BASED LEARNING (PBL) ASSESSMENT (20 MARKS TOTAL):
+            COORDINATOR PUBLISHED RUBRIC ASSESSMENT (TOTAL MARKS: {maxTotalMarks || 40} MARKS):
           </p>
         </div>
 
@@ -457,25 +468,26 @@ export function AirbnbFacultyDashboard({
           <div><strong>Project Title:</strong> {team.project_title}</div>
         </div>
 
-        {/* Official Bloom's Taxonomy Matrix Rubrics Table Created by Coordinator */}
+        {/* Official Bloom's Taxonomy Matrix Rubrics Table Created by Coordinator with MANUAL NUMBER INPUTS */}
         <div style={{ overflowX: "auto", marginBottom: "28px" }}>
           <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #000", fontSize: "12px" }}>
             <thead>
               <tr style={{ background: "#f1f5f9", textAlign: "center" }}>
                 <th style={{ border: "1px solid #000", padding: "10px 6px", width: "45px" }}>CO</th>
                 <th style={{ border: "1px solid #000", padding: "10px 8px", width: "160px" }}>Criteria</th>
-                <th style={{ border: "1px solid #000", padding: "10px 6px", width: "45px" }}>Max</th>
-                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 5 (5M)</th>
-                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 4 (4M)</th>
-                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 3 (3M)</th>
-                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 2 (2M)</th>
-                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 1 (1M)</th>
-                <th style={{ border: "1px solid #000", padding: "10px 6px", width: "110px", background: "#e0f2fe" }}>Assign Score</th>
+                <th style={{ border: "1px solid #000", padding: "10px 6px", width: "50px" }}>Max</th>
+                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 5 (9-10M)</th>
+                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 4 (7-8M)</th>
+                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 3 (5-6M)</th>
+                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 2 (3-4M)</th>
+                <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 1 (1-2M)</th>
+                <th style={{ border: "1px solid #000", padding: "10px 6px", width: "130px", background: "#e0f2fe" }}>Enter Marks Manually</th>
               </tr>
             </thead>
             <tbody>
               {publishedRubrics.map((c) => {
-                const currentVal = evalData.criteriaScores[c.id] ?? c.max_marks;
+                const currentVal = evalData.criteriaScores[c.id] ?? Math.round(c.max_marks * 0.8);
+                const ratio = c.max_marks > 0 ? currentVal / c.max_marks : 0;
 
                 return (
                   <tr key={c.id} style={{ textAlign: "left", verticalAlign: "top" }}>
@@ -488,54 +500,60 @@ export function AirbnbFacultyDashboard({
                       {c.name}
                     </td>
                     <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>
-                      {c.max_marks}
+                      {c.max_marks} M
                     </td>
-                    <td style={{ border: "1px solid #000", padding: "8px", background: currentVal === 5 ? "#dcfce7" : "transparent" }}>
-                      <span style={{ fontSize: "11px" }}>{c.level5_desc || `Executes exceptional ${c.name} (5M)`}</span>
+                    <td style={{ border: "1px solid #000", padding: "8px", background: ratio >= 0.85 ? "#dcfce7" : "transparent" }}>
+                      <span style={{ fontSize: "11px" }}>{c.level5_desc || `Executes exceptional ${c.name}`}</span>
                     </td>
-                    <td style={{ border: "1px solid #000", padding: "8px", background: currentVal === 4 ? "#dcfce7" : "transparent" }}>
-                      <span style={{ fontSize: "11px" }}>{c.level4_desc || `Performs thorough ${c.name} (4M)`}</span>
+                    <td style={{ border: "1px solid #000", padding: "8px", background: ratio >= 0.65 && ratio < 0.85 ? "#dcfce7" : "transparent" }}>
+                      <span style={{ fontSize: "11px" }}>{c.level4_desc || `Performs thorough ${c.name}`}</span>
                     </td>
-                    <td style={{ border: "1px solid #000", padding: "8px", background: currentVal === 3 ? "#dcfce7" : "transparent" }}>
-                      <span style={{ fontSize: "11px" }}>{c.level3_desc || `Conducts effective ${c.name} (3M)`}</span>
+                    <td style={{ border: "1px solid #000", padding: "8px", background: ratio >= 0.45 && ratio < 0.65 ? "#dcfce7" : "transparent" }}>
+                      <span style={{ fontSize: "11px" }}>{c.level3_desc || `Conducts effective ${c.name}`}</span>
                     </td>
-                    <td style={{ border: "1px solid #000", padding: "8px", background: currentVal === 2 ? "#dcfce7" : "transparent" }}>
-                      <span style={{ fontSize: "11px" }}>{c.level2_desc || `Applies basic ${c.name} (2M)`}</span>
+                    <td style={{ border: "1px solid #000", padding: "8px", background: ratio >= 0.25 && ratio < 0.45 ? "#dcfce7" : "transparent" }}>
+                      <span style={{ fontSize: "11px" }}>{c.level2_desc || `Applies basic ${c.name}`}</span>
                     </td>
-                    <td style={{ border: "1px solid #000", padding: "8px", background: currentVal === 1 ? "#dcfce7" : "transparent" }}>
-                      <span style={{ fontSize: "11px" }}>{c.level1_desc || `Shows limited ${c.name} (1M)`}</span>
+                    <td style={{ border: "1px solid #000", padding: "8px", background: ratio > 0 && ratio < 0.25 ? "#dcfce7" : "transparent" }}>
+                      <span style={{ fontSize: "11px" }}>{c.level1_desc || `Shows limited ${c.name}`}</span>
                     </td>
-                    <td style={{ border: "1px solid #000", padding: "8px", background: "#f0f9ff", textAlign: "center" }}>
-                      <select
-                        value={currentVal}
-                        onChange={(e) => {
-                          const val = Number(e.target.value);
-                          setTeamEvaluations((prev) => ({
-                            ...prev,
-                            [team.id]: {
-                              ...(prev[team.id] || { criteriaScores: {}, co5_marks: 0, co6_marks: 0, remarks: "", submitted: false }),
-                              criteriaScores: {
-                                ...(prev[team.id]?.criteriaScores || {}),
-                                [c.id]: val,
+                    {/* MANUAL NUMBER INPUT CELL (No dropdown!) */}
+                    <td style={{ border: "1px solid #000", padding: "10px 8px", background: "#f0f9ff", textAlign: "center" }}>
+                      <div style={{ display: "flex", flexDirection: "column", alignItems: "center", gap: "4px" }}>
+                        <input
+                          type="number"
+                          min="0"
+                          max={c.max_marks}
+                          value={currentVal}
+                          onChange={(e) => {
+                            const val = Math.min(c.max_marks, Math.max(0, Number(e.target.value) || 0));
+                            setTeamEvaluations((prev) => ({
+                              ...prev,
+                              [team.id]: {
+                                ...(prev[team.id] || { criteriaScores: {}, co5_marks: 0, co6_marks: 0, remarks: "", submitted: false }),
+                                criteriaScores: {
+                                  ...(prev[team.id]?.criteriaScores || {}),
+                                  [c.id]: val,
+                                },
                               },
-                            },
-                          }));
-                        }}
-                        style={{
-                          padding: "6px 8px",
-                          fontSize: "13px",
-                          fontWeight: 800,
-                          borderRadius: "6px",
-                          border: "2px solid #2563eb",
-                          background: "#ffffff",
-                          cursor: "pointer",
-                          width: "100%",
-                        }}
-                      >
-                        {[5, 4, 3, 2, 1, 0].map((m) => (
-                          <option key={m} value={m}>{m} / {c.max_marks} Marks</option>
-                        ))}
-                      </select>
+                            }));
+                          }}
+                          style={{
+                            width: "72px",
+                            padding: "8px",
+                            fontSize: "16px",
+                            fontWeight: 900,
+                            textAlign: "center",
+                            borderRadius: "8px",
+                            border: "2px solid #2563eb",
+                            background: "#ffffff",
+                            outline: "none",
+                          }}
+                        />
+                        <span style={{ fontSize: "11px", fontWeight: 800, color: "#475569" }}>
+                          / {c.max_marks} Marks
+                        </span>
+                      </div>
                     </td>
                   </tr>
                 );
@@ -548,6 +566,7 @@ export function AirbnbFacultyDashboard({
         <div style={{ fontSize: "12px", marginBottom: "24px", lineHeight: "1.6", background: "#f8fafc", padding: "12px 16px", borderRadius: "8px", border: "1px solid #cbd5e1" }}>
           <strong>Evaluation Note & Regulations:</strong>
           <ol style={{ margin: "4px 0 0", paddingLeft: "20px" }}>
+            <li>Faculty members can manually enter any assigned mark up to the maximum criteria limit.</li>
             <li>Students who have not met the guides regularly will be awarded <strong>zero marks</strong>.</li>
             <li>Students who do not present their project progress according to the format or miss presentation will be awarded <strong>zero marks</strong>.</li>
           </ol>
@@ -563,9 +582,9 @@ export function AirbnbFacultyDashboard({
               <tr style={{ background: "#f1f5f9", textAlign: "center" }}>
                 <th style={{ border: "1px solid #000", padding: "8px" }}>Student Name / Role</th>
                 <th style={{ border: "1px solid #000", padding: "8px" }}>USN</th>
-                <th style={{ border: "1px solid #000", padding: "8px" }}>CO5 Score (Max 10M)</th>
-                <th style={{ border: "1px solid #000", padding: "8px" }}>CO6 Score (Max 10M)</th>
-                <th style={{ border: "1px solid #000", padding: "8px", background: "#dcfce7" }}>Total Score (Max 20M)</th>
+                <th style={{ border: "1px solid #000", padding: "8px" }}>CO5 Score (Max {co5Max || 20}M)</th>
+                <th style={{ border: "1px solid #000", padding: "8px" }}>CO6 Score (Max {co6Max || 20}M)</th>
+                <th style={{ border: "1px solid #000", padding: "8px", background: "#dcfce7" }}>Total Score (Max {maxTotalMarks || 40}M)</th>
               </tr>
             </thead>
             <tbody>
@@ -578,13 +597,13 @@ export function AirbnbFacultyDashboard({
                     {usn.trim()}
                   </td>
                   <td style={{ border: "1px solid #000", padding: "8px", fontWeight: 800, color: "#1d4ed8" }}>
-                    {co5Score} / 10 Marks
+                    {co5Score} / {co5Max || 20} Marks
                   </td>
                   <td style={{ border: "1px solid #000", padding: "8px", fontWeight: 800, color: "#0f766e" }}>
-                    {co6Score} / 10 Marks
+                    {co6Score} / {co6Max || 20} Marks
                   </td>
                   <td style={{ border: "1px solid #000", padding: "8px", fontWeight: 900, fontSize: "14px", color: "#059669", background: "#f0fdf4" }}>
-                    {totalScore} / 20 Marks
+                    {totalScore} / {maxTotalMarks || 40} Marks
                   </td>
                 </tr>
               ))}
@@ -625,7 +644,7 @@ export function AirbnbFacultyDashboard({
               <div>
                 <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 700 }}>Total Final Score Assigned:</span>
                 <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#059669", margin: "2px 0 0" }}>
-                  {totalScore} / 20 Marks
+                  {totalScore} / {maxTotalMarks || 40} Marks
                 </h2>
               </div>
 
@@ -803,7 +822,7 @@ export function AirbnbFacultyDashboard({
                   </p>
                   <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
                     <span style={{ fontSize: "13px", fontWeight: 700, color: "#059669" }}>
-                      Review 3 Matrix (20 Marks Total)
+                      Manual Number Input Grading
                     </span>
                     <button type="button" className="btn-primary-pill" style={{ background: "#10b981", padding: "10px 20px" }}>
                       🚀 Open Evaluation Page →
@@ -947,7 +966,7 @@ export function AirbnbFacultyDashboard({
             </div>
           )}
 
-          {/* SUB-VIEW 3: DEDICATED RUBRICS EVALUATION PAGE (EXACT COORDINATOR DOCUMENT MATRIX) */}
+          {/* SUB-VIEW 3: DEDICATED RUBRICS EVALUATION PAGE (EXACT COORDINATOR DOCUMENT MATRIX WITH MANUAL NUMBER INPUTS) */}
           {teamSubView === "eval" && (
             <div>
               <div className="full-page-header">
@@ -1182,7 +1201,7 @@ export function AirbnbFacultyDashboard({
                 <div className="action-icon-box dark">📊</div>
                 <div className="action-text-box">
                   <div className="action-card-title">Rubrics Evaluation & Mark Submission</div>
-                  <div className="action-card-sub">Grade student teams for Review 3 (CO5 & CO6 - 20 Marks Total)</div>
+                  <div className="action-card-sub">Grade student teams for Review 3 (CO5 & CO6 - 40 Marks Total)</div>
                 </div>
                 <div className="action-arrow">→</div>
               </div>
@@ -1821,7 +1840,7 @@ export function AirbnbFacultyDashboard({
               ← Back to Dashboard
             </button>
             <h1 className="full-page-title">📊 Review 3 Rubric Evaluation & Mark Submission</h1>
-            <p className="full-page-desc">Grade mentee student teams using the official GM University Rubric Document format (20 Marks Total).</p>
+            <p className="full-page-desc">Grade mentee student teams using the official GM University Rubric Document format.</p>
           </div>
 
           {renderOfficialCoordinatorRubricDocument(menteeTeams.find((t) => t.id === Number(selectedTeamId)) || menteeTeams[0])}

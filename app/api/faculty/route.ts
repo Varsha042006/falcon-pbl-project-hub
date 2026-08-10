@@ -2,6 +2,26 @@ import { NextResponse } from "next/server";
 import { requireRole } from "@/lib/auth";
 import { query } from "@/lib/db";
 
+export async function GET() {
+  try {
+    const rubrics = await query<{ id: number }>("SELECT id FROM rubrics ORDER BY id DESC LIMIT 1");
+    if (rubrics.length > 0) {
+      const criteriaList = await query(
+        `SELECT id, co_code, name, max_marks, level5_desc, level4_desc, level3_desc, level2_desc, level1_desc 
+         FROM rubric_criteria 
+         WHERE rubric_id = $1 
+         ORDER BY id ASC`,
+        [rubrics[0].id]
+      );
+      return NextResponse.json({ success: true, rubrics: criteriaList });
+    }
+    return NextResponse.json({ success: true, rubrics: [] });
+  } catch (err: unknown) {
+    const errorMessage = err instanceof Error ? err.message : "Internal Server Error";
+    return NextResponse.json({ error: errorMessage }, { status: 500 });
+  }
+}
+
 export async function POST(req: Request) {
   const user = await requireRole(["FACULTY", "SUPERVISOR", "COORDINATOR", "ADMIN"]);
   if (!user) {

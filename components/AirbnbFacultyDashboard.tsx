@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 export interface ProjectItem {
   id: number;
@@ -91,8 +91,26 @@ export function AirbnbFacultyDashboard({
   const [projects, setProjects] = useState<ProjectItem[]>(initialProjects);
   const [menteeTeams] = useState<MenteeTeamItem[]>(initialTeams);
   const [applications, setApplications] = useState<ApplicationItem[]>(initialApplications);
-  const [publishedRubrics] = useState<RubricCriterion[]>(initialRubrics);
+  const [publishedRubrics, setPublishedRubrics] = useState<RubricCriterion[]>(initialRubrics);
   const [toast, setToast] = useState<{ msg: string; type: "success" | "error" } | null>(null);
+
+  // Live Sync with Coordinator Rubrics from Database
+  useEffect(() => {
+    const fetchLiveRubrics = async () => {
+      try {
+        const res = await fetch("/api/faculty");
+        if (res.ok) {
+          const data = await res.json();
+          if (data.rubrics && data.rubrics.length > 0) {
+            setPublishedRubrics(data.rubrics);
+          }
+        }
+      } catch {
+        // Keep initial state if offline
+      }
+    };
+    fetchLiveRubrics();
+  }, []);
 
   // Selected Semester for Allotted Teams view
   const [selectedAllottedSem, setSelectedAllottedSem] = useState<number>(5);

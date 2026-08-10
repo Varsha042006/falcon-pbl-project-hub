@@ -6,6 +6,7 @@ import {
   ProjectItem,
   MenteeTeamItem,
   ApplicationItem,
+  RubricCriterion,
 } from "@/components/AirbnbFacultyDashboard";
 
 export default async function FacultyDashboard() {
@@ -135,12 +136,77 @@ export default async function FacultyDashboard() {
     },
   ];
 
+  // 4. Fetch Published Rubric Criteria (Official GM University Review 3)
+  let publishedRubrics: RubricCriterion[] = [];
+  try {
+    const rubrics = await query<{ id: number }>("SELECT id FROM rubrics ORDER BY id DESC LIMIT 1");
+    if (rubrics.length > 0) {
+      publishedRubrics = await query<RubricCriterion>(
+        `SELECT id, co_code, name, max_marks, level5_desc, level4_desc, level3_desc, level2_desc, level1_desc 
+         FROM rubric_criteria 
+         WHERE rubric_id = $1 
+         ORDER BY id ASC`,
+        [rubrics[0].id]
+      );
+    }
+  } catch {
+    publishedRubrics = [];
+  }
+
+  const defaultRubrics: RubricCriterion[] = publishedRubrics.length > 0 ? publishedRubrics : [
+    {
+      id: 1,
+      co_code: "CO5",
+      name: "Testing & Validation",
+      max_marks: 5,
+      level5_desc: "Executes exceptional testing with complete and accurate validation (5M)",
+      level4_desc: "Performs thorough testing with reliable validation (4M)",
+      level3_desc: "Conducts effective testing with minor limitations (3M)",
+      level2_desc: "Applies basic testing with partial validation (2M)",
+      level1_desc: "Shows limited testing with insufficient validation (1M)",
+    },
+    {
+      id: 2,
+      co_code: "CO5",
+      name: "Results Interpretation & Reporting",
+      max_marks: 5,
+      level5_desc: "Presents outstanding evaluation with comprehensive and clear reporting (5M)",
+      level4_desc: "Provides detailed evaluation with clear reporting (4M)",
+      level3_desc: "Demonstrates good evaluation with minor gaps (3M)",
+      level2_desc: "Illustrates basic evaluation with limited reporting (2M)",
+      level1_desc: "Displays weak analysis with inadequate reporting (1M)",
+    },
+    {
+      id: 3,
+      co_code: "CO6",
+      name: "System Demonstration & Functionality",
+      max_marks: 5,
+      level5_desc: "Showcases excellent demonstration with flawless functionality (5M)",
+      level4_desc: "Exhibits complete demonstration with seamless functionality (4M)",
+      level3_desc: "Demonstrates effective functionality with minor issues (3M)",
+      level2_desc: "Reveals partial demonstration with limited functionality (2M)",
+      level1_desc: "Indicates incomplete demonstration with significant issues (1M)",
+    },
+    {
+      id: 4,
+      co_code: "CO6",
+      name: "Project Significance & Future Scope",
+      max_marks: 5,
+      level5_desc: "Establishes exceptional impact assessment with innovative future scope (5M)",
+      level4_desc: "Highlights strong impact assessment with clear future scope (4M)",
+      level3_desc: "Explains good impact evaluation with minor gaps (3M)",
+      level2_desc: "Presents basic impact evaluation with simple future scope (2M)",
+      level1_desc: "Displays minimal impact assessment with weak future scope (1M)",
+    },
+  ];
+
   return (
     <AirbnbFacultyDashboard
       displayName={user.displayName}
       myProjects={defaultProjects}
       menteeTeams={defaultMenteeTeams}
       applications={applications}
+      publishedRubrics={defaultRubrics}
     />
   );
 }

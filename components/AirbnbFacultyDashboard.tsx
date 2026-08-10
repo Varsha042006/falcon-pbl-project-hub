@@ -628,7 +628,7 @@ export function AirbnbFacultyDashboard({
                     fontWeight: 800,
                     padding: "12px 20px",
                     display: "flex",
-                    align-items: "center",
+                    alignItems: "center",
                     gap: "8px",
                     borderRadius: "30px",
                   }}

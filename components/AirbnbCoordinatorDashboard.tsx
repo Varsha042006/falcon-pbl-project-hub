@@ -661,57 +661,6 @@ export function AirbnbCoordinatorDashboard({
             <p className="full-page-desc">Assign faculty supervisors to class sections (Semesters 1 to 8, Sections A, B, C).</p>
           </div>
 
-          {/* Top Form: Assign Faculty as Supervisor */}
-          <div className="airbnb-card" style={{ marginBottom: "28px" }}>
-            <h2 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "16px" }}>➕ Assign Faculty to Class Section</h2>
-            <form onSubmit={handleAssignSupervisor} style={{ display: "grid", gridTemplateColumns: "1fr 1fr 180px 180px", gap: "16px", alignItems: "end" }}>
-              <div className="modal-field" style={{ marginBottom: 0 }}>
-                <label>Select Faculty Member ({allFaculty.length} Available)</label>
-                <select
-                  value={selectedFacultyId}
-                  onChange={(e) => setSelectedFacultyId(Number(e.target.value))}
-                  required
-                >
-                  {allFaculty.map((f) => (
-                    <option key={f.id} value={f.id}>
-                      {f.faculty_code} - {f.name} ({f.designation || "Faculty"})
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="modal-field" style={{ marginBottom: 0 }}>
-                <label>Select Class Section (1st - 8th Sem, A/B/C)</label>
-                <select
-                  value={selectedSectionId}
-                  onChange={(e) => setSelectedSectionId(Number(e.target.value))}
-                  required
-                >
-                  {allSections.map((s) => (
-                    <option key={s.id} value={s.id}>
-                      Section {s.name}
-                    </option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="modal-field" style={{ marginBottom: 0, paddingBottom: "10px" }}>
-                <label style={{ display: "flex", alignItems: "center", gap: "8px", cursor: "pointer" }}>
-                  <input
-                    type="checkbox"
-                    checked={isPrimary}
-                    onChange={(e) => setIsPrimary(e.target.checked)}
-                    style={{ width: "auto", height: "auto" }}
-                  />
-                  Primary Guide
-                </label>
-              </div>
-
-              <button type="submit" className="btn-primary-pill" style={{ height: "48px" }} disabled={loading}>
-                {loading ? "Assigning..." : "➕ Assign Supervisor"}
-              </button>
-            </form>
-          </div>
 
           {/* Bottom Table: All Registered Faculty & Assigned Sections */}
           <div className="airbnb-card">

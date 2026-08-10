@@ -43,6 +43,14 @@ export interface TeamMessage {
   timestamp: string;
 }
 
+export interface TeamEvaluationRecord {
+  co5_marks: number;
+  co6_marks: number;
+  remarks: string;
+  submitted: boolean;
+  updated_at?: string;
+}
+
 interface AirbnbFacultyDashboardProps {
   displayName: string;
   myProjects: ProjectItem[];
@@ -73,8 +81,9 @@ export function AirbnbFacultyDashboard({
   // Selected Semester for Allotted Teams view
   const [selectedAllottedSem, setSelectedAllottedSem] = useState<number>(5);
 
-  // Active Team Conversation State (null when not chatting, or team ID when viewing team conversation)
+  // Active Team Workspace State (null when on list views, or team ID when in dedicated team room page)
   const [activeChatTeamId, setActiveChatTeamId] = useState<number | null>(null);
+  const [teamRoomTab, setTeamRoomTab] = useState<"chat" | "evaluation">("chat");
   const [newMessageText, setNewMessageText] = useState("");
 
   // Sample initial team chat conversations indexed by team ID
@@ -136,6 +145,13 @@ export function AirbnbFacultyDashboard({
     ],
   });
 
+  // Per-Team Rubrics Evaluation State indexed by team ID
+  const [teamEvaluations, setTeamEvaluations] = useState<Record<number, TeamEvaluationRecord>>({
+    1: { co5_marks: 9, co6_marks: 9, remarks: "Excellent CO5 testing analysis and CO6 demonstration.", submitted: true, updated_at: "Today" },
+    2: { co5_marks: 8, co6_marks: 8, remarks: "Good implementation. Minor fixes required in reporting.", submitted: false, updated_at: "Pending" },
+    3: { co5_marks: 10, co6_marks: 9, remarks: "Flawless hardware prototype and clear future scope.", submitted: false, updated_at: "Pending" },
+  });
+
   // New Project Form State
   const [title, setTitle] = useState("");
   const [domain, setDomain] = useState("Web Engineering");
@@ -151,11 +167,11 @@ export function AirbnbFacultyDashboard({
   const [editTechStack, setEditTechStack] = useState("");
   const [editMaxTeams, setEditMaxTeams] = useState(2);
 
-  // Evaluation Form State
+  // Global Evaluation Form State
   const [selectedTeamId, setSelectedTeamId] = useState<number>(menteeTeams[0]?.id || 1);
-  const [co5Marks, setCo5Marks] = useState(9);
-  const [co6Marks, setCo6Marks] = useState(9);
-  const [evalRemarks, setEvalRemarks] = useState("Excellent progress and flawless demonstration.");
+  const [globalCo5, setGlobalCo5] = useState(9);
+  const [globalCo6, setGlobalCo6] = useState(9);
+  const [globalRemarks, setGlobalRemarks] = useState("Excellent progress and flawless demonstration.");
 
   const showToast = (msg: string, type: "success" | "error" = "success") => {
     setToast({ msg, type });
@@ -183,6 +199,42 @@ export function AirbnbFacultyDashboard({
     const activeTeam = menteeTeams.find((t) => t.id === activeChatTeamId);
     showToast(`Sent guidance message to ${activeTeam?.team_name || "Team"}!`);
     setNewMessageText("");
+  };
+
+  // Handler: Submit Per-Team Evaluation & Marks Allocation
+  const handleSaveTeamEvaluation = async (e: React.FormEvent, teamId: number) => {
+    e.preventDefault();
+    const activeTeam = menteeTeams.find((t) => t.id === teamId);
+    const evalData = teamEvaluations[teamId] || { co5_marks: 9, co6_marks: 9, remarks: "Good performance.", submitted: true };
+
+    setTeamEvaluations((prev) => ({
+      ...prev,
+      [teamId]: {
+        ...evalData,
+        submitted: true,
+        updated_at: new Date().toLocaleTimeString([], { hour: "2-digit", minute: "2-digit" }),
+      },
+    }));
+
+    showToast(`Saved Review 3 Marks (${evalData.co5_marks + evalData.co6_marks}/20) for ${activeTeam?.team_name || "Team"}!`);
+
+    try {
+      await fetch("/api/faculty", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          action: "SUBMIT_EVALUATION",
+          data: {
+            team_id: teamId,
+            co5_marks: evalData.co5_marks,
+            co6_marks: evalData.co6_marks,
+            remarks: evalData.remarks,
+          },
+        }),
+      });
+    } catch {
+      // Toast already shown
+    }
   };
 
   // Publish New Project
@@ -283,8 +335,8 @@ export function AirbnbFacultyDashboard({
     showToast(`${status === "APPROVED" ? "Approved" : "Rejected"} team application!`);
   };
 
-  // Submit Evaluation Marks
-  const handleSubmitEvaluation = async (e: React.FormEvent) => {
+  // Submit Global Evaluation Marks
+  const handleSubmitGlobalEvaluation = async (e: React.FormEvent) => {
     e.preventDefault();
     const team = menteeTeams.find((t) => t.id === Number(selectedTeamId));
     showToast(`Submitted Review 3 evaluation marks for Team ${team?.team_name || "Falcon CS-A1"}!`);
@@ -297,9 +349,9 @@ export function AirbnbFacultyDashboard({
           action: "SUBMIT_EVALUATION",
           data: {
             team_id: selectedTeamId,
-            co5_marks: co5Marks,
-            co6_marks: co6Marks,
-            remarks: evalRemarks,
+            co5_marks: globalCo5,
+            co6_marks: globalCo6,
+            remarks: globalRemarks,
           },
         }),
       });
@@ -316,6 +368,7 @@ export function AirbnbFacultyDashboard({
 
   const activeChatTeam = menteeTeams.find((t) => t.id === activeChatTeamId);
   const activeMessages = activeChatTeamId ? teamChatMessages[activeChatTeamId] || [] : [];
+  const currentTeamEval = activeChatTeamId ? teamEvaluations[activeChatTeamId] || { co5_marks: 8, co6_marks: 8, remarks: "Good implementation.", submitted: false } : null;
 
   return (
     <div className="airbnb-admin-root">
@@ -384,7 +437,7 @@ export function AirbnbFacultyDashboard({
         </div>
       </header>
 
-      {/* ================= VIEW: DEDICATED TEAM CONVERSATION ROOM PAGE ================= */}
+      {/* ================= VIEW: DEDICATED TEAM WORKSPACE PAGE (CONVERSATION & MARKS ALLOCATION) ================= */}
       {activeChatTeamId !== null && activeChatTeam && (
         <div className="airbnb-container">
           <div className="full-page-header">
@@ -394,17 +447,58 @@ export function AirbnbFacultyDashboard({
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", width: "100%" }}>
               <div>
                 <h1 className="full-page-title" style={{ display: "flex", alignItems: "center", gap: "12px" }}>
-                  💬 {activeChatTeam.team_name} — Team Guidance Room
+                  🏆 {activeChatTeam.team_name} ({activeChatTeam.team_code}) — Team Workspace
                 </h1>
                 <p className="full-page-desc">
-                  Direct conversation and project mentorship room between Guide <strong>{displayName}</strong> and team members.
+                  Dedicated page for team conversation guidance & Review 3 rubrics evaluation marks allocation for guide <strong>{displayName}</strong>.
                 </p>
               </div>
 
               <span className="status-badge-active" style={{ fontSize: "13px", padding: "8px 16px" }}>
-                🟢 Live Guidance Active
+                🟢 Guide Workspace Active
               </span>
             </div>
+          </div>
+
+          {/* Dedicated Sub-Navigation Tabs Bar for Team Page */}
+          <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }}>
+            <button
+              type="button"
+              className={`btn-secondary-pill ${teamRoomTab === "chat" ? "active" : ""}`}
+              style={{
+                background: teamRoomTab === "chat" ? "var(--airbnb-dark)" : "#ffffff",
+                color: teamRoomTab === "chat" ? "#ffffff" : "var(--airbnb-dark)",
+                borderColor: "var(--airbnb-dark)",
+                fontWeight: 800,
+                padding: "12px 24px",
+                borderRadius: "30px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+              onClick={() => setTeamRoomTab("chat")}
+            >
+              💬 Guide & Team Conversation Room ({activeMessages.length} Messages)
+            </button>
+
+            <button
+              type="button"
+              className={`btn-secondary-pill ${teamRoomTab === "evaluation" ? "active" : ""}`}
+              style={{
+                background: teamRoomTab === "evaluation" ? "var(--airbnb-dark)" : "#ffffff",
+                color: teamRoomTab === "evaluation" ? "#ffffff" : "var(--airbnb-dark)",
+                borderColor: "var(--airbnb-dark)",
+                fontWeight: 800,
+                padding: "12px 24px",
+                borderRadius: "30px",
+                display: "flex",
+                alignItems: "center",
+                gap: "8px",
+              }}
+              onClick={() => setTeamRoomTab("evaluation")}
+            >
+              📊 Rubrics Evaluation & Marks Allocation ({currentTeamEval ? `${currentTeamEval.co5_marks + currentTeamEval.co6_marks}/20 Marks` : "0/20 Marks"})
+            </button>
           </div>
 
           <div style={{ display: "grid", gridTemplateColumns: "320px 1fr", gap: "24px" }}>
@@ -434,7 +528,7 @@ export function AirbnbFacultyDashboard({
                   Team Members ({activeChatTeam.usn_list.split(",").length} Members)
                 </h3>
                 <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                  <div style={{ padding: "10px 12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyBetween: "space-between" }}>
+                  <div style={{ padding: "10px 12px", background: "#f8fafc", borderRadius: "10px", border: "1px solid #e2e8f0", display: "flex", alignItems: "center", justifyContent: "space-between" }}>
                     <div>
                       <strong style={{ fontSize: "13px", display: "block", color: "var(--airbnb-dark)" }}>
                         👑 {activeChatTeam.leader_name}
@@ -458,108 +552,217 @@ export function AirbnbFacultyDashboard({
               </div>
             </div>
 
-            {/* Right Main Area: Conversation Feed & Reply Box */}
-            <div className="airbnb-card" style={{ display: "flex", flexDirection: "column", minHeight: "560px" }}>
-              <div style={{ paddingBottom: "14px", borderBottom: "1px solid #e2e8f0", marginBottom: "18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
-                <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0, color: "var(--airbnb-dark)", display: "flex", alignItems: "center", gap: "8px" }}>
-                  💬 Guide & Team Conversation Feed
-                </h3>
-                <span style={{ fontSize: "12px", color: "#64748b" }}>
-                  {activeMessages.length} Messages in thread
-                </span>
-              </div>
+            {/* Right Main Area: Selected Tab View */}
+            {teamRoomTab === "chat" ? (
+              /* TAB 1: CONVERSATION FEED */
+              <div className="airbnb-card" style={{ display: "flex", flexDirection: "column", minHeight: "560px" }}>
+                <div style={{ paddingBottom: "14px", borderBottom: "1px solid #e2e8f0", marginBottom: "18px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <h3 style={{ fontSize: "16px", fontWeight: 800, margin: 0, color: "var(--airbnb-dark)", display: "flex", alignItems: "center", gap: "8px" }}>
+                    💬 Guide & Team Conversation Feed
+                  </h3>
+                  <span style={{ fontSize: "12px", color: "#64748b" }}>
+                    {activeMessages.length} Messages in thread
+                  </span>
+                </div>
 
-              {/* Message Feed Container */}
-              <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px", paddingRight: "8px" }}>
-                {activeMessages.map((msg) => {
-                  const isFaculty = msg.sender_role === "FACULTY";
+                {/* Message Feed Container */}
+                <div style={{ flex: 1, overflowY: "auto", display: "flex", flexDirection: "column", gap: "16px", marginBottom: "20px", paddingRight: "8px" }}>
+                  {activeMessages.map((msg) => {
+                    const isFaculty = msg.sender_role === "FACULTY";
 
-                  return (
-                    <div
-                      key={msg.id}
-                      style={{
-                        display: "flex",
-                        flexDirection: "column",
-                        alignItems: isFaculty ? "flex-end" : "flex-start",
-                      }}
-                    >
+                    return (
                       <div
+                        key={msg.id}
                         style={{
                           display: "flex",
-                          alignItems: "center",
-                          gap: "8px",
-                          marginBottom: "4px",
+                          flexDirection: "column",
+                          alignItems: isFaculty ? "flex-end" : "flex-start",
                         }}
                       >
-                        <span style={{ fontSize: "12px", fontWeight: 800, color: isFaculty ? "#1d4ed8" : "#0f766e" }}>
-                          {isFaculty ? `👨‍🏫 ${msg.sender_name} (Guide)` : `👨‍🎓 ${msg.sender_name}`}
-                        </span>
-                        <span style={{ fontSize: "11px", color: "#94a3b8" }}>{msg.timestamp}</span>
-                      </div>
+                        <div
+                          style={{
+                            display: "flex",
+                            alignItems: "center",
+                            gap: "8px",
+                            marginBottom: "4px",
+                          }}
+                        >
+                          <span style={{ fontSize: "12px", fontWeight: 800, color: isFaculty ? "#1d4ed8" : "#0f766e" }}>
+                            {isFaculty ? `👨‍🏫 ${msg.sender_name} (Guide)` : `👨‍🎓 ${msg.sender_name}`}
+                          </span>
+                          <span style={{ fontSize: "11px", color: "#94a3b8" }}>{msg.timestamp}</span>
+                        </div>
 
-                      <div
+                        <div
+                          style={{
+                            maxWidth: "80%",
+                            padding: "14px 18px",
+                            borderRadius: isFaculty ? "18px 18px 2px 18px" : "18px 18px 18px 2px",
+                            background: isFaculty ? "#eff6ff" : "#f8fafc",
+                            color: "var(--airbnb-dark)",
+                            border: isFaculty ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
+                            fontSize: "14px",
+                            lineHeight: "1.5",
+                            boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+                          }}
+                        >
+                          {msg.message}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+
+                {/* New Message Input Form */}
+                <form onSubmit={handleSendChatMessage} style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}>
+                  <div style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
+                    <div style={{ flex: 1 }}>
+                      <textarea
+                        rows={2}
+                        placeholder={`Write guidance message or instructions to ${activeChatTeam.team_name}...`}
+                        value={newMessageText}
+                        onChange={(e) => setNewMessageText(e.target.value)}
                         style={{
-                          maxWidth: "80%",
-                          padding: "14px 18px",
-                          borderRadius: isFaculty ? "18px 18px 2px 18px" : "18px 18px 18px 2px",
-                          background: isFaculty ? "#eff6ff" : "#f8fafc",
-                          color: "var(--airbnb-dark)",
-                          border: isFaculty ? "1px solid #bfdbfe" : "1px solid #e2e8f0",
+                          width: "100%",
+                          padding: "12px 16px",
+                          borderRadius: "12px",
+                          border: "2px solid #cbd5e1",
                           fontSize: "14px",
-                          lineHeight: "1.5",
-                          boxShadow: "0 2px 6px rgba(0,0,0,0.02)",
+                          outline: "none",
                         }}
-                      >
-                        {msg.message}
-                      </div>
+                      />
                     </div>
-                  );
-                })}
-              </div>
 
-              {/* New Message Input Form */}
-              <form onSubmit={handleSendChatMessage} style={{ borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}>
-                <div style={{ display: "flex", gap: "12px", alignItems: "flex-end" }}>
-                  <div style={{ flex: 1 }}>
-                    <textarea
-                      rows={2}
-                      placeholder={`Write guidance message or instructions to ${activeChatTeam.team_name}...`}
-                      value={newMessageText}
-                      onChange={(e) => setNewMessageText(e.target.value)}
+                    <button
+                      type="submit"
+                      className="btn-primary-pill"
                       style={{
-                        width: "100%",
-                        padding: "12px 16px",
-                        borderRadius: "12px",
-                        border: "2px solid #cbd5e1",
+                        height: "52px",
+                        padding: "0 24px",
                         fontSize: "14px",
-                        outline: "none",
-                        transition: "border-color 0.2s",
+                        fontWeight: 800,
+                        background: "#3b82f6",
+                        display: "flex",
+                        alignItems: "center",
+                        gap: "8px",
+                        whiteSpace: "nowrap",
                       }}
-                      onFocus={(e) => (e.target.style.borderColor = "#3b82f6")}
-                      onBlur={(e) => (e.target.style.borderColor = "#cbd5e1")}
+                    >
+                      🚀 Send Message
+                    </button>
+                  </div>
+                </form>
+              </div>
+            ) : (
+              /* TAB 2: DEDICATED RUBRICS EVALUATION & MARKS ALLOCATION */
+              <div className="airbnb-card">
+                <div style={{ paddingBottom: "14px", borderBottom: "1px solid #e2e8f0", marginBottom: "20px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                  <div>
+                    <h3 style={{ fontSize: "18px", fontWeight: 800, margin: 0, color: "var(--airbnb-dark)" }}>
+                      📊 Rubrics Evaluation & Marks Allocation for {activeChatTeam.team_name}
+                    </h3>
+                    <p style={{ margin: "2px 0 0", fontSize: "13px", color: "#64748b" }}>
+                      Grade Review 3 evaluation criteria specifically for {activeChatTeam.team_code} (Max 20 Marks Total).
+                    </p>
+                  </div>
+
+                  <span className="legend-item" style={{ background: currentTeamEval?.submitted ? "#e7f7ef" : "#fff8e6", color: currentTeamEval?.submitted ? "#0f8a5f" : "#b7791f", fontWeight: 800 }}>
+                    {currentTeamEval?.submitted ? "SUBMITTED 🟢" : "PENDING ALLOCATION ⏳"}
+                  </span>
+                </div>
+
+                <form onSubmit={(e) => handleSaveTeamEvaluation(e, activeChatTeam.id)}>
+                  <div style={{ background: "#f8fafc", padding: "20px", borderRadius: "14px", border: "1px solid #e2e8f0", marginBottom: "20px" }}>
+                    <h4 style={{ fontSize: "15px", fontWeight: 800, margin: "0 0 16px", color: "var(--airbnb-dark)" }}>
+                      Official GM University Review 3 Rubric Criteria
+                    </h4>
+
+                    <div className="modal-field">
+                      <label>CO5: Testing & Results Interpretation (Max 10 Marks)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        value={currentTeamEval?.co5_marks || 0}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setTeamEvaluations((prev) => ({
+                            ...prev,
+                            [activeChatTeam.id]: {
+                              ...(prev[activeChatTeam.id] || { co5_marks: 0, co6_marks: 0, remarks: "", submitted: false }),
+                              co5_marks: val,
+                            },
+                          }));
+                        }}
+                        required
+                        style={{ fontSize: "16px", fontWeight: 800, width: "100%" }}
+                      />
+                      <span style={{ fontSize: "12px", color: "var(--airbnb-gray)" }}>Testing & Validation (5M) + Results & Reporting (5M)</span>
+                    </div>
+
+                    <div className="modal-field" style={{ marginBottom: 0 }}>
+                      <label>CO6: System Demonstration & Future Scope (Max 10 Marks)</label>
+                      <input
+                        type="number"
+                        min="0"
+                        max="10"
+                        value={currentTeamEval?.co6_marks || 0}
+                        onChange={(e) => {
+                          const val = Number(e.target.value);
+                          setTeamEvaluations((prev) => ({
+                            ...prev,
+                            [activeChatTeam.id]: {
+                              ...(prev[activeChatTeam.id] || { co5_marks: 0, co6_marks: 0, remarks: "", submitted: false }),
+                              co6_marks: val,
+                            },
+                          }));
+                        }}
+                        required
+                        style={{ fontSize: "16px", fontWeight: 800, width: "100%" }}
+                      />
+                      <span style={{ fontSize: "12px", color: "var(--airbnb-gray)" }}>Demonstration & Functionality (5M) + Future Scope (5M)</span>
+                    </div>
+                  </div>
+
+                  <div className="modal-field" style={{ marginBottom: "24px" }}>
+                    <label>Faculty Guide Evaluation Remarks & Feedback</label>
+                    <textarea
+                      rows={3}
+                      placeholder={`Enter specific feedback and recommendations for ${activeChatTeam.team_name}...`}
+                      value={currentTeamEval?.remarks || ""}
+                      onChange={(e) => {
+                        const text = e.target.value;
+                        setTeamEvaluations((prev) => ({
+                          ...prev,
+                          [activeChatTeam.id]: {
+                            ...(prev[activeChatTeam.id] || { co5_marks: 0, co6_marks: 0, remarks: "", submitted: false }),
+                            remarks: text,
+                          },
+                        }));
+                      }}
+                      style={{ width: "100%", padding: "12px 14px", borderRadius: "10px", border: "1px solid #dbdbdb", fontSize: "14px" }}
                     />
                   </div>
 
-                  <button
-                    type="submit"
-                    className="btn-primary-pill"
-                    style={{
-                      height: "52px",
-                      padding: "0 24px",
-                      fontSize: "14px",
-                      fontWeight: 800,
-                      background: "#3b82f6",
-                      display: "flex",
-                      alignItems: "center",
-                      gap: "8px",
-                      whiteSpace: "nowrap",
-                    }}
-                  >
-                    🚀 Send Message
-                  </button>
-                </div>
-              </form>
-            </div>
+                  <div style={{ background: "#e7f7ef", padding: "20px", borderRadius: "14px", border: "1px solid #a7f3d0", marginBottom: "24px", display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+                    <div>
+                      <span style={{ fontSize: "13px", color: "#0f8a5f", fontWeight: 700 }}>Total Allocated Score for {activeChatTeam.team_code}</span>
+                      <h2 style={{ fontSize: "32px", fontWeight: 900, color: "#0f8a5f", margin: "2px 0 0" }}>
+                        {(currentTeamEval?.co5_marks || 0) + (currentTeamEval?.co6_marks || 0)} / 20 Marks
+                      </h2>
+                    </div>
+
+                    <button
+                      type="submit"
+                      className="btn-primary-pill"
+                      style={{ height: "48px", padding: "0 28px", fontSize: "14px", fontWeight: 800, background: "#10b981" }}
+                    >
+                      💾 Submit & Lock Marks for {activeChatTeam.team_name}
+                    </button>
+                  </div>
+                </form>
+              </div>
+            )}
           </div>
         </div>
       )}
@@ -726,7 +929,7 @@ export function AirbnbFacultyDashboard({
                       <th>Class Section</th>
                       <th>Allotted Project Title</th>
                       <th>Status</th>
-                      <th style={{ width: "160px", textAlign: "right" }}>Guide Conversation</th>
+                      <th style={{ width: "200px", textAlign: "right" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -734,7 +937,7 @@ export function AirbnbFacultyDashboard({
                       <tr key={t.id}>
                         <td><code>{t.team_code}</code></td>
                         <td>
-                          <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => setActiveChatTeamId(t.id)}>
+                          <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => { setActiveChatTeamId(t.id); setTeamRoomTab("chat"); }}>
                             {t.team_name}
                           </strong>
                           <span style={{ display: "block", fontSize: "12px", color: "var(--airbnb-gray)" }}>
@@ -754,14 +957,24 @@ export function AirbnbFacultyDashboard({
                           </span>
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <button
-                            type="button"
-                            className="btn-primary-pill"
-                            style={{ padding: "6px 14px", fontSize: "12px", background: "#3b82f6" }}
-                            onClick={() => setActiveChatTeamId(t.id)}
-                          >
-                            💬 Open Chat Room
-                          </button>
+                          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                            <button
+                              type="button"
+                              className="btn-primary-pill"
+                              style={{ padding: "6px 12px", fontSize: "12px", background: "#3b82f6" }}
+                              onClick={() => { setActiveChatTeamId(t.id); setTeamRoomTab("chat"); }}
+                            >
+                              💬 Chat
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-primary-pill"
+                              style={{ padding: "6px 12px", fontSize: "12px", background: "#10b981" }}
+                              onClick={() => { setActiveChatTeamId(t.id); setTeamRoomTab("evaluation"); }}
+                            >
+                              📊 Rubrics
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1061,7 +1274,7 @@ export function AirbnbFacultyDashboard({
                       <th>Class Section</th>
                       <th>Allotted Project Title</th>
                       <th>Status</th>
-                      <th style={{ width: "160px", textAlign: "right" }}>Guide Conversation</th>
+                      <th style={{ width: "200px", textAlign: "right" }}>Actions</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -1069,7 +1282,7 @@ export function AirbnbFacultyDashboard({
                       <tr key={t.id}>
                         <td><code>{t.team_code}</code></td>
                         <td>
-                          <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => setActiveChatTeamId(t.id)}>
+                          <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => { setActiveChatTeamId(t.id); setTeamRoomTab("chat"); }}>
                             {t.team_name}
                           </strong>
                           <span style={{ display: "block", fontSize: "12px", color: "var(--airbnb-gray)" }}>
@@ -1089,14 +1302,24 @@ export function AirbnbFacultyDashboard({
                           </span>
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <button
-                            type="button"
-                            className="btn-primary-pill"
-                            style={{ padding: "6px 14px", fontSize: "12px", background: "#3b82f6" }}
-                            onClick={() => setActiveChatTeamId(t.id)}
-                          >
-                            💬 Open Chat Room
-                          </button>
+                          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                            <button
+                              type="button"
+                              className="btn-primary-pill"
+                              style={{ padding: "6px 12px", fontSize: "12px", background: "#3b82f6" }}
+                              onClick={() => { setActiveChatTeamId(t.id); setTeamRoomTab("chat"); }}
+                            >
+                              💬 Chat
+                            </button>
+                            <button
+                              type="button"
+                              className="btn-primary-pill"
+                              style={{ padding: "6px 12px", fontSize: "12px", background: "#10b981" }}
+                              onClick={() => { setActiveChatTeamId(t.id); setTeamRoomTab("evaluation"); }}
+                            >
+                              📊 Rubrics
+                            </button>
+                          </div>
                         </td>
                       </tr>
                     ))}
@@ -1140,7 +1363,7 @@ export function AirbnbFacultyDashboard({
                     <th>Section</th>
                     <th>Assigned Project Title</th>
                     <th>Status</th>
-                    <th style={{ width: "160px", textAlign: "right" }}>Guide Conversation</th>
+                    <th style={{ width: "200px", textAlign: "right" }}>Actions</th>
                   </tr>
                 </thead>
                 <tbody>
@@ -1148,7 +1371,7 @@ export function AirbnbFacultyDashboard({
                     <tr key={t.id}>
                       <td><code>{t.team_code}</code></td>
                       <td>
-                        <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => setActiveChatTeamId(t.id)}>
+                        <strong style={{ cursor: "pointer", color: "#1877f2" }} onClick={() => { setActiveChatTeamId(t.id); setTeamRoomTab("chat"); }}>
                           {t.team_name}
                         </strong>
                         <span style={{ display: "block", fontSize: "12px", color: "var(--airbnb-gray)" }}>Leader: {t.leader_name}</span>
@@ -1158,14 +1381,24 @@ export function AirbnbFacultyDashboard({
                       <td><strong>{t.project_title}</strong></td>
                       <td><span className="legend-item" style={{ background: "#e7f7ef", color: "#0f8a5f", fontWeight: 800 }}>{t.status} 🟢</span></td>
                       <td style={{ textAlign: "right" }}>
-                        <button
-                          type="button"
-                          className="btn-primary-pill"
-                          style={{ padding: "6px 14px", fontSize: "12px", background: "#3b82f6" }}
-                          onClick={() => setActiveChatTeamId(t.id)}
-                        >
-                          💬 Open Chat Room
-                        </button>
+                        <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
+                          <button
+                            type="button"
+                            className="btn-primary-pill"
+                            style={{ padding: "6px 12px", fontSize: "12px", background: "#3b82f6" }}
+                            onClick={() => { setActiveChatTeamId(t.id); setTeamRoomTab("chat"); }}
+                          >
+                            💬 Chat
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-primary-pill"
+                            style={{ padding: "6px 12px", fontSize: "12px", background: "#10b981" }}
+                            onClick={() => { setActiveChatTeamId(t.id); setTeamRoomTab("evaluation"); }}
+                          >
+                            📊 Rubrics
+                          </button>
+                        </div>
                       </td>
                     </tr>
                   ))}
@@ -1254,7 +1487,7 @@ export function AirbnbFacultyDashboard({
         </div>
       )}
 
-      {/* ================= VIEW 6: EVALUATION & MARK SUBMISSION ================= */}
+      {/* ================= VIEW 6: GLOBAL EVALUATION & MARK SUBMISSION ================= */}
       {activeChatTeamId === null && currentView === "evaluations" && (
         <div className="airbnb-container">
           <div className="full-page-header">
@@ -1269,7 +1502,7 @@ export function AirbnbFacultyDashboard({
             {/* Left: Evaluation Form */}
             <div className="airbnb-card">
               <h2 style={{ fontSize: "18px", fontWeight: 800, marginBottom: "18px" }}>Review 3 Evaluation Form</h2>
-              <form onSubmit={handleSubmitEvaluation}>
+              <form onSubmit={handleSubmitGlobalEvaluation}>
                 <div className="modal-field">
                   <label>Select Mentee Team to Grade</label>
                   <select
@@ -1295,8 +1528,8 @@ export function AirbnbFacultyDashboard({
                       type="number"
                       min="0"
                       max="10"
-                      value={co5Marks}
-                      onChange={(e) => setCo5Marks(Number(e.target.value))}
+                      value={globalCo5}
+                      onChange={(e) => setGlobalCo5(Number(e.target.value))}
                       required
                     />
                     <span style={{ fontSize: "12px", color: "var(--airbnb-gray)" }}>Testing & Validation (5M) + Results & Reporting (5M)</span>
@@ -1308,8 +1541,8 @@ export function AirbnbFacultyDashboard({
                       type="number"
                       min="0"
                       max="10"
-                      value={co6Marks}
-                      onChange={(e) => setCo6Marks(Number(e.target.value))}
+                      value={globalCo6}
+                      onChange={(e) => setGlobalCo6(Number(e.target.value))}
                       required
                     />
                     <span style={{ fontSize: "12px", color: "var(--airbnb-gray)" }}>Demonstration & Functionality (5M) + Future Scope (5M)</span>
@@ -1320,8 +1553,8 @@ export function AirbnbFacultyDashboard({
                   <label>Faculty Guide Remarks & Feedback</label>
                   <textarea
                     rows={3}
-                    value={evalRemarks}
-                    onChange={(e) => setEvalRemarks(e.target.value)}
+                    value={globalRemarks}
+                    onChange={(e) => setGlobalRemarks(e.target.value)}
                     style={{ width: "100%", padding: "10px 14px", borderRadius: "10px", border: "1px solid #dbdbdb" }}
                   />
                 </div>
@@ -1338,9 +1571,9 @@ export function AirbnbFacultyDashboard({
               <div style={{ background: "#e7f7ef", padding: "20px", borderRadius: "14px", border: "1px solid #a7f3d0", marginBottom: "20px" }}>
                 <span style={{ fontSize: "13px", color: "#0f8a5f", fontWeight: 700 }}>Total Calculated Score</span>
                 <h2 style={{ fontSize: "36px", fontWeight: 900, color: "#0f8a5f", margin: "4px 0" }}>
-                  {co5Marks + co6Marks} / 20 Marks
+                  {globalCo5 + globalCo6} / 20 Marks
                 </h2>
-                <span style={{ fontSize: "12px", color: "#0f8a5f" }}>CO5 ({co5Marks}/10) + CO6 ({co6Marks}/10)</span>
+                <span style={{ fontSize: "12px", color: "#0f8a5f" }}>CO5 ({globalCo5}/10) + CO6 ({globalCo6}/10)</span>
               </div>
 
               <div style={{ fontSize: "13px", lineHeight: "1.6", color: "var(--airbnb-dark)" }}>

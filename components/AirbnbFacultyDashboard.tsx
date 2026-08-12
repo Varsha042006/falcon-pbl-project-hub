@@ -456,6 +456,7 @@ export function AirbnbFacultyDashboard({
     });
 
     return (
+      <>
       <div id="rubric-document-eval" className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000" }}>
         {/* Document Institutional Header */}
         <div style={{ textAlign: "center", borderBottom: "2px solid #000000", paddingBottom: "16px", marginBottom: "24px" }}>
@@ -589,42 +590,75 @@ export function AirbnbFacultyDashboard({
             <li>Students who do not present their project progress according to the format or miss presentation will be awarded <strong>zero marks</strong>.</li>
           </ol>
         </div>
+      </div>
+
+      {/* ===== PAGE 2: Student Marks Allocation, Feedback & Declaration ===== */}
+      <div className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000", marginTop: "32px", pageBreakBefore: "always", breakBefore: "page" as never }}>
+        {/* Page 2 Header */}
+        <div style={{ textAlign: "center", borderBottom: "2px solid #000000", paddingBottom: "12px", marginBottom: "24px" }}>
+          <p style={{ margin: 0, fontSize: "12px", fontStyle: "italic" }}>Srishyla Education Trust ®</p>
+          <h2 style={{ margin: "4px 0 2px", fontSize: "20px", fontWeight: 900, letterSpacing: "1px", color: "#000000" }}>GM UNIVERSITY</h2>
+          <p style={{ margin: "4px 0 0", fontSize: "13px", fontWeight: 800, textTransform: "uppercase" }}>PBL ASSESSMENT – Review 3 (Page 2: Student Marks & Declaration)</p>
+        </div>
 
         {/* Student Team Member Marks Allocation Table */}
         <div style={{ marginBottom: "28px" }}>
-          <h3 style={{ fontWeight: 800, fontSize: "14px", margin: "0 0 10px" }}>
-            Student Team Roster Marks Allocation ({team.team_name})
-          </h3>
-          <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #000", fontSize: "12px" }}>
+          <p style={{ fontWeight: 800, fontSize: "14px", margin: "0 0 10px" }}>
+            <strong>Project Name:</strong> {team.project_title}
+          </p>
+          <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #000", fontSize: "13px" }}>
             <thead>
-              <tr style={{ background: "#f1f5f9", textAlign: "center" }}>
-                <th style={{ border: "1px solid #000", padding: "8px" }}>Student Name / Role</th>
-                <th style={{ border: "1px solid #000", padding: "8px" }}>USN</th>
-                <th style={{ border: "1px solid #000", padding: "8px" }}>CO5 Score (Max {co5Max || 20}M)</th>
-                <th style={{ border: "1px solid #000", padding: "8px" }}>CO6 Score (Max {co6Max || 20}M)</th>
-                <th style={{ border: "1px solid #000", padding: "8px", background: "#dcfce7" }}>Total Score (Max {maxTotalMarks || 40}M)</th>
+              <tr style={{ textAlign: "center" }}>
+                <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>Student Name</th>
+                <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>USN</th>
+                <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>CO5 ({co5Max || 10} Marks)</th>
+                <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>CO6 ({co6Max || 10} Marks)</th>
               </tr>
             </thead>
             <tbody>
-              {team.usn_list.split(",").map((usn, idx) => (
-                <tr key={idx} style={{ textAlign: "center" }}>
-                  <td style={{ border: "1px solid #000", padding: "8px", textAlign: "left", fontWeight: 700 }}>
-                    {idx === 0 ? `👑 ${team.leader_name} (Leader)` : `🎓 Student Member #${idx + 1}`}
-                  </td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontFamily: "monospace", fontWeight: 700 }}>
-                    {usn.trim()}
-                  </td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontWeight: 800, color: "#1d4ed8" }}>
-                    {co5Score} / {co5Max || 20} Marks
-                  </td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontWeight: 800, color: "#0f766e" }}>
-                    {co6Score} / {co6Max || 20} Marks
-                  </td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontWeight: 900, fontSize: "14px", color: "#059669", background: "#f0fdf4" }}>
-                    {totalScore} / {maxTotalMarks || 40} Marks
-                  </td>
-                </tr>
-              ))}
+              {Array.from({ length: 5 }).map((_, idx) => {
+                const usnList = team.usn_list.split(",");
+                const usn = usnList[idx]?.trim() || "";
+                const studentName = idx === 0 && usn ? `${team.leader_name} (Team Lead)` : (usn ? `Student Member #${idx + 1}` : "");
+                return (
+                  <tr key={idx} style={{ textAlign: "center" }}>
+                    <td style={{ border: "1px solid #000", padding: "4px 6px", textAlign: "left" }}>
+                      <input
+                        type="text"
+                        defaultValue={studentName}
+                        placeholder="Enter student name"
+                        style={{ width: "100%", padding: "8px 10px", border: "none", outline: "none", fontSize: "13px", fontWeight: 700, background: "transparent" }}
+                      />
+                    </td>
+                    <td style={{ border: "1px solid #000", padding: "4px 6px" }}>
+                      <input
+                        type="text"
+                        defaultValue={usn}
+                        placeholder="Enter USN"
+                        style={{ width: "100%", padding: "8px 10px", border: "none", outline: "none", fontSize: "13px", fontWeight: 700, fontFamily: "monospace", background: "transparent" }}
+                      />
+                    </td>
+                    <td style={{ border: "1px solid #000", padding: "4px 6px" }}>
+                      <input
+                        type="number"
+                        min="0"
+                        max={co5Max || 10}
+                        placeholder="0"
+                        style={{ width: "100%", padding: "8px 10px", border: "none", outline: "none", fontSize: "13px", fontWeight: 800, textAlign: "center", background: "transparent", WebkitAppearance: "none", MozAppearance: "textfield" as never, appearance: "none" as never }}
+                      />
+                    </td>
+                    <td style={{ border: "1px solid #000", padding: "4px 6px" }}>
+                      <input
+                        type="number"
+                        min="0"
+                        max={co6Max || 10}
+                        placeholder="0"
+                        style={{ width: "100%", padding: "8px 10px", border: "none", outline: "none", fontSize: "13px", fontWeight: 800, textAlign: "center", background: "transparent", WebkitAppearance: "none", MozAppearance: "textfield" as never, appearance: "none" as never }}
+                      />
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -658,6 +692,41 @@ export function AirbnbFacultyDashboard({
               I hereby declare that I have conducted the Review 3 presentation of the students, analyzed their progress, and evaluated their performance according to the Coordinator Published Rubric criteria. The marks have been entered as per their performance.
             </p>
 
+            {/* Guide Details — Editable by Faculty (Vertical Layout) */}
+            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px", maxWidth: "400px" }}>
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: 800, color: "#1c1e21", display: "block", marginBottom: "4px" }}>Guide Name:</label>
+                <input
+                  type="text"
+                  placeholder="Enter guide name"
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: 800, color: "#1c1e21", display: "block", marginBottom: "4px" }}>Designation:</label>
+                <input
+                  type="text"
+                  placeholder="Enter designation"
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: 800, color: "#1c1e21", display: "block", marginBottom: "4px" }}>Department:</label>
+                <input
+                  type="text"
+                  placeholder="Enter department"
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }}
+                />
+              </div>
+              <div>
+                <label style={{ fontSize: "13px", fontWeight: 800, color: "#1c1e21", display: "block", marginBottom: "4px" }}>Date:</label>
+                <input
+                  type="date"
+                  style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }}
+                />
+              </div>
+            </div>
+
             <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
               <div>
                 <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 700 }}>Total Final Score Assigned:</span>
@@ -677,6 +746,7 @@ export function AirbnbFacultyDashboard({
           </div>
         </form>
       </div>
+      </>
     );
   };
 
@@ -1196,30 +1266,11 @@ export function AirbnbFacultyDashboard({
                 </div>
                 <div className="action-arrow">→</div>
               </div>
-
-              <div className="vertical-action-card green-theme" onClick={() => setCurrentView("menteeTeams")}>
-                <div className="action-icon-box green">👥</div>
-                <div className="action-text-box">
-                  <div className="action-card-title">Assigned Mentee Student Teams</div>
-                  <div className="action-card-sub">View student team rosters, USNs, and open team chat rooms</div>
-                </div>
-                <div className="action-arrow">→</div>
-              </div>
-
               <div className="vertical-action-card blue-theme" onClick={() => setCurrentView("applications")}>
                 <div className="action-icon-box blue">📝</div>
                 <div className="action-text-box">
                   <div className="action-card-title">Review Student Project Choice Applications</div>
                   <div className="action-card-sub">Approve or reject student team project applications</div>
-                </div>
-                <div className="action-arrow">→</div>
-              </div>
-
-              <div className="vertical-action-card dark-theme" onClick={() => setCurrentView("evaluations")}>
-                <div className="action-icon-box dark">📊</div>
-                <div className="action-text-box">
-                  <div className="action-card-title">Rubrics Evaluation & Mark Submission</div>
-                  <div className="action-card-sub">Grade student teams for Review 3 (CO5 & CO6 - 40 Marks Total)</div>
                 </div>
                 <div className="action-arrow">→</div>
               </div>
@@ -1320,24 +1371,14 @@ export function AirbnbFacultyDashboard({
                           </span>
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
-                            <button
-                              type="button"
-                              className="btn-primary-pill"
-                              style={{ padding: "6px 12px", fontSize: "12px", background: "#3b82f6" }}
-                              onClick={() => setActiveChatTeamId(t.id)}
-                            >
-                              💬 Chat Room
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-primary-pill"
-                              style={{ padding: "6px 12px", fontSize: "12px", background: "#10b981" }}
-                              onClick={() => setActiveEvalTeamId(t.id)}
-                            >
-                              📊 Evaluation Page
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            className="btn-primary-pill"
+                            style={{ padding: "8px 18px", fontSize: "12px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", fontWeight: 800 }}
+                            onClick={() => { setSelectedTeamWorkspaceId(t.id); setTeamSubView("hub"); }}
+                          >
+                            🚀 Workspace
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -1665,24 +1706,14 @@ export function AirbnbFacultyDashboard({
                           </span>
                         </td>
                         <td style={{ textAlign: "right" }}>
-                          <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
-                            <button
-                              type="button"
-                              className="btn-primary-pill"
-                              style={{ padding: "6px 12px", fontSize: "12px", background: "#3b82f6" }}
-                              onClick={() => setActiveChatTeamId(t.id)}
-                            >
-                              💬 Chat Room
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-primary-pill"
-                              style={{ padding: "6px 12px", fontSize: "12px", background: "#10b981" }}
-                              onClick={() => setActiveEvalTeamId(t.id)}
-                            >
-                              📊 Evaluation Page
-                            </button>
-                          </div>
+                          <button
+                            type="button"
+                            className="btn-primary-pill"
+                            style={{ padding: "8px 18px", fontSize: "12px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", fontWeight: 800 }}
+                            onClick={() => { setSelectedTeamWorkspaceId(t.id); setTeamSubView("hub"); }}
+                          >
+                            🚀 Workspace
+                          </button>
                         </td>
                       </tr>
                     ))}
@@ -1744,24 +1775,14 @@ export function AirbnbFacultyDashboard({
                       <td><strong>{t.project_title}</strong></td>
                       <td><span className="legend-item" style={{ background: "#e7f7ef", color: "#0f8a5f", fontWeight: 800 }}>{t.status} 🟢</span></td>
                       <td style={{ textAlign: "right" }}>
-                        <div style={{ display: "flex", gap: "6px", justifyContent: "flex-end" }}>
-                          <button
-                            type="button"
-                            className="btn-primary-pill"
-                            style={{ padding: "6px 12px", fontSize: "12px", background: "#3b82f6" }}
-                            onClick={() => setActiveChatTeamId(t.id)}
-                          >
-                            💬 Chat Room
-                          </button>
-                          <button
-                            type="button"
-                            className="btn-primary-pill"
-                            style={{ padding: "6px 12px", fontSize: "12px", background: "#10b981" }}
-                            onClick={() => setActiveEvalTeamId(t.id)}
-                          >
-                            📊 Evaluation Page
-                          </button>
-                        </div>
+                        <button
+                          type="button"
+                          className="btn-primary-pill"
+                          style={{ padding: "8px 18px", fontSize: "12px", background: "linear-gradient(135deg, #6366f1, #8b5cf6)", fontWeight: 800 }}
+                          onClick={() => { setSelectedTeamWorkspaceId(t.id); setTeamSubView("hub"); }}
+                        >
+                          🚀 Workspace
+                        </button>
                       </td>
                     </tr>
                   ))}

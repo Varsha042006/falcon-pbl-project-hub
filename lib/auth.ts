@@ -1,7 +1,7 @@
 import { cookies } from "next/headers";
 import { SignJWT, jwtVerify } from "jose";
 
-export type Role = "ADMIN" | "COORDINATOR" | "FACULTY" | "SUPERVISOR" | "STUDENT";
+export type Role = "ADMIN" | "COORDINATOR" | "FACULTY" | "SUPERVISOR" | "MENTOR" | "STUDENT";
 
 export type SessionUser = {
   id: number;
@@ -66,6 +66,8 @@ export function getRoleRedirectPath(role: Role): string {
       return "/faculty";
     case "SUPERVISOR":
       return "/supervisor";
+    case "MENTOR":
+      return "/mentor";
     case "STUDENT":
     default:
       return "/dashboard";

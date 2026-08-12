@@ -7,7 +7,7 @@ interface LoginFormProps {
   initialError?: string;
 }
 
-type RoleTab = "STUDENT" | "FACULTY" | "COORDINATOR" | "ADMIN";
+type RoleTab = "STUDENT" | "FACULTY" | "COORDINATOR" | "MENTOR" | "ADMIN";
 
 export function LoginForm({ initialError }: LoginFormProps) {
   const [activeTab, setActiveTab] = useState<RoleTab>("STUDENT");
@@ -52,6 +52,8 @@ export function LoginForm({ initialError }: LoginFormProps) {
               ? "Invalid Faculty Code or password. Valid Codes: FAC001 to FAC020."
               : activeTab === "COORDINATOR"
               ? "Invalid Coordinator Code or password. Valid Codes: FAC001 to FAC020."
+              : activeTab === "MENTOR"
+              ? "Invalid Faculty Mentor Code or password. Valid Codes: FAC001 to FAC020."
               : "Invalid Admin Code or password. Valid Code: ADM001."
           );
           setLoading(false);
@@ -70,6 +72,8 @@ export function LoginForm({ initialError }: LoginFormProps) {
             ? "/faculty"
             : activeTab === "COORDINATOR"
             ? "/coordinator"
+            : activeTab === "MENTOR"
+            ? "/mentor"
             : "/admin";
         router.push(dest);
         router.refresh();
@@ -156,6 +160,13 @@ export function LoginForm({ initialError }: LoginFormProps) {
               onClick={() => handleTabChange("COORDINATOR")}
             >
               📋 Coordinator
+            </button>
+            <button
+              type="button"
+              className={`role-tab-btn ${activeTab === "MENTOR" ? "active" : ""}`}
+              onClick={() => handleTabChange("MENTOR")}
+            >
+              👨‍🏫 Faculty Mentor
             </button>
             <button
               type="button"

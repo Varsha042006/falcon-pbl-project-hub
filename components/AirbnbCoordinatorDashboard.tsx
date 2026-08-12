@@ -807,6 +807,7 @@ export function AirbnbCoordinatorDashboard({
 
           {/* MODE A: OFFICIAL GM UNIVERSITY RUBRIC DOCUMENT VIEW */}
           {rubricTab === "viewRubric" && (
+            <>
             <div id="rubric-document-to-print" className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000" }}>
               {/* Document Header */}
               <div style={{ textAlign: "center", borderBottom: "2px solid #000000", paddingBottom: "16px", marginBottom: "24px" }}>
@@ -894,32 +895,68 @@ export function AirbnbCoordinatorDashboard({
                   <li>Students who do not present their project progress according to the format or those who miss the presentation will be awarded <strong>zero marks</strong>.</li>
                 </ol>
               </div>
+            </div>
 
-              {/* Student Evaluation Summary Table */}
+            {/* ===== PAGE 2: Student Marks Allocation & Declaration ===== */}
+            <div className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000", marginTop: "32px", pageBreakBefore: "always", breakBefore: "page" as never }}>
+              {/* Page 2 Header */}
+              <div style={{ textAlign: "center", borderBottom: "2px solid #000000", paddingBottom: "12px", marginBottom: "24px" }}>
+                <p style={{ margin: 0, fontSize: "12px", fontStyle: "italic" }}>Srishyla Education Trust ®</p>
+                <h2 style={{ margin: "4px 0 2px", fontSize: "20px", fontWeight: 900, letterSpacing: "1px", color: "#000000" }}>GM UNIVERSITY</h2>
+                <p style={{ margin: "4px 0 0", fontSize: "13px", fontWeight: 800, textTransform: "uppercase" }}>PBL ASSESSMENT – Review 3 (Page 2: Student Marks & Declaration)</p>
+              </div>
+
+              {/* Student Evaluation Summary Table — 5 Editable Rows */}
               <div style={{ marginBottom: "32px" }}>
-                <p style={{ fontWeight: 800, fontSize: "13px", margin: "0 0 8px" }}>Project Name: [ Student Team Project Title ]</p>
-                <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #000", fontSize: "12px" }}>
+                <p style={{ fontWeight: 800, fontSize: "14px", margin: "0 0 10px" }}>
+                  <strong>Project Name:</strong> [ Student Team Project Title ]
+                </p>
+                <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #000", fontSize: "13px" }}>
                   <thead>
-                    <tr style={{ background: "#f1f5f9", textAlign: "center" }}>
-                      <th style={{ border: "1px solid #000", padding: "8px" }}>Student Name</th>
-                      <th style={{ border: "1px solid #000", padding: "8px" }}>USN</th>
-                      <th style={{ border: "1px solid #000", padding: "8px" }}>
+                    <tr style={{ textAlign: "center" }}>
+                      <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>Student Name</th>
+                      <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>USN</th>
+                      <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>
                         CO5 ({criteria.filter((c) => (c.co_code || "CO5") === "CO5").reduce((a, b) => a + Number(b.max_marks), 0)} Marks)
                       </th>
-                      <th style={{ border: "1px solid #000", padding: "8px" }}>
+                      <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>
                         CO6 ({criteria.filter((c) => (c.co_code || "CO5") === "CO6").reduce((a, b) => a + Number(b.max_marks), 0)} Marks)
                       </th>
-                      <th style={{ border: "1px solid #000", padding: "8px" }}>Total ({totalMarks} Marks)</th>
                     </tr>
                   </thead>
                   <tbody>
-                    {[1, 2, 3, 4].map((i) => (
-                      <tr key={i} style={{ height: "32px" }}>
-                        <td style={{ border: "1px solid #000", padding: "6px" }}></td>
-                        <td style={{ border: "1px solid #000", padding: "6px" }}></td>
-                        <td style={{ border: "1px solid #000", padding: "6px" }}></td>
-                        <td style={{ border: "1px solid #000", padding: "6px" }}></td>
-                        <td style={{ border: "1px solid #000", padding: "6px" }}></td>
+                    {Array.from({ length: 5 }).map((_, idx) => (
+                      <tr key={idx} style={{ textAlign: "center" }}>
+                        <td style={{ border: "1px solid #000", padding: "4px 6px", textAlign: "left" }}>
+                          <input
+                            type="text"
+                            placeholder="Enter student name"
+                            style={{ width: "100%", padding: "8px 10px", border: "none", outline: "none", fontSize: "13px", fontWeight: 700, background: "transparent" }}
+                          />
+                        </td>
+                        <td style={{ border: "1px solid #000", padding: "4px 6px" }}>
+                          <input
+                            type="text"
+                            placeholder="Enter USN"
+                            style={{ width: "100%", padding: "8px 10px", border: "none", outline: "none", fontSize: "13px", fontWeight: 700, fontFamily: "monospace", background: "transparent" }}
+                          />
+                        </td>
+                        <td style={{ border: "1px solid #000", padding: "4px 6px" }}>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            style={{ width: "100%", padding: "8px 10px", border: "none", outline: "none", fontSize: "13px", fontWeight: 800, textAlign: "center", background: "transparent", WebkitAppearance: "none", MozAppearance: "textfield" as never, appearance: "none" as never }}
+                          />
+                        </td>
+                        <td style={{ border: "1px solid #000", padding: "4px 6px" }}>
+                          <input
+                            type="number"
+                            min="0"
+                            placeholder="0"
+                            style={{ width: "100%", padding: "8px 10px", border: "none", outline: "none", fontSize: "13px", fontWeight: 800, textAlign: "center", background: "transparent", WebkitAppearance: "none", MozAppearance: "textfield" as never, appearance: "none" as never }}
+                          />
+                        </td>
                       </tr>
                     ))}
                   </tbody>
@@ -932,11 +969,24 @@ export function AirbnbCoordinatorDashboard({
                   I hereby declare that I have conducted the Review 3 presentation of the students, analyzed their progress, and evaluated their performance. The marks have been entered as per their performance in the review.
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", fontSize: "13px", lineHeight: "1.8" }}>
-                  <div>
-                    <p style={{ margin: 0 }}><strong>Guide Name:</strong> Dr. Anand V</p>
-                    <p style={{ margin: 0 }}><strong>Designation:</strong> Professor</p>
-                    <p style={{ margin: 0 }}><strong>Department:</strong> CSE</p>
-                    <p style={{ margin: 0 }}><strong>Date:</strong> {new Date().toLocaleDateString()}</p>
+                  {/* Guide Details — Vertical Layout */}
+                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
+                    <div>
+                      <label style={{ fontSize: "13px", fontWeight: 800, display: "block", marginBottom: "2px" }}>Guide Name:</label>
+                      <input type="text" placeholder="Enter guide name" style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "13px", fontWeight: 800, display: "block", marginBottom: "2px" }}>Designation:</label>
+                      <input type="text" placeholder="Enter designation" style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "13px", fontWeight: 800, display: "block", marginBottom: "2px" }}>Department:</label>
+                      <input type="text" placeholder="Enter department" style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }} />
+                    </div>
+                    <div>
+                      <label style={{ fontSize: "13px", fontWeight: 800, display: "block", marginBottom: "2px" }}>Date:</label>
+                      <input type="date" style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }} />
+                    </div>
                     <p style={{ margin: "16px 0 0" }}><strong>Signature:</strong> ______________________</p>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
@@ -946,6 +996,7 @@ export function AirbnbCoordinatorDashboard({
                 </div>
               </div>
             </div>
+            </>
           )}
 
           {/* MODE B: EDIT / CREATE RUBRICS CRITERIA */}

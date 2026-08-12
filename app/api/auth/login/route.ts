@@ -59,6 +59,17 @@ export async function POST(req: Request) {
       `,
       [identifier]
     );
+  } else if (roleType === "MENTOR") {
+    users = await query<UserRecord>(
+      `
+      SELECT u.* 
+      FROM users u 
+      LEFT JOIN faculty f ON u.faculty_id = f.id 
+      WHERE u.is_active = true 
+        AND (LOWER(f.faculty_code) = LOWER($1) OR LOWER(u.username) = LOWER($1) OR LOWER(f.email) = LOWER($1))
+      `,
+      [identifier]
+    );
   } else if (roleType === "ADMIN") {
     users = await query<UserRecord>(
       `
@@ -94,7 +105,7 @@ export async function POST(req: Request) {
 
   // 2. Dynamic Fallback: If user row not found, check if valid Faculty Code or Student USN exists in DB
   if (!u) {
-    if (roleType === "FACULTY" || roleType === "COORDINATOR" || roleType === "ALL") {
+    if (roleType === "FACULTY" || roleType === "COORDINATOR" || roleType === "MENTOR" || roleType === "ALL") {
       const facRows = await query<{ id: number; faculty_code: string; name: string }>(
         `SELECT id, faculty_code, name FROM faculty WHERE LOWER(faculty_code) = LOWER($1) AND is_active = true`,
         [identifier]
@@ -102,7 +113,7 @@ export async function POST(req: Request) {
       if (facRows.length > 0) {
         const fac = facRows[0];
         const defaultHash = await bcrypt.hash("Falcon@123", 12);
-        const assignedRole: Role = roleType === "COORDINATOR" ? "COORDINATOR" : "FACULTY";
+        const assignedRole: Role = roleType === "COORDINATOR" ? "COORDINATOR" : roleType === "MENTOR" ? "MENTOR" : "FACULTY";
         const newUser = await query<UserRecord>(
           `
           INSERT INTO users (username, password_hash, display_name, role, faculty_id)
@@ -142,7 +153,7 @@ export async function POST(req: Request) {
     return NextResponse.redirect(new URL("/login?error=1", req.url), 303);
   }
 
-  const effectiveRole: Role = roleType === "COORDINATOR" ? "COORDINATOR" : u.role;
+  const effectiveRole: Role = roleType === "COORDINATOR" ? "COORDINATOR" : roleType === "MENTOR" ? "MENTOR" : u.role;
 
   await createSession({
     id: u.id,

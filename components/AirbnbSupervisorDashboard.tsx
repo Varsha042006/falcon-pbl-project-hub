@@ -630,7 +630,7 @@ export function AirbnbSupervisorDashboard({
                             key={s.id}
                             style={{
                               display: "flex",
-                              justify: "space-between",
+                              justifyContent: "space-between",
                               alignItems: "center",
                               padding: "10px 14px",
                               marginBottom: "6px",

@@ -24,6 +24,7 @@ export interface MenteeTeamItem {
   semester?: number;
   project_title: string;
   status: string;
+  guide_name?: string;
 }
 
 export interface ApplicationItem {

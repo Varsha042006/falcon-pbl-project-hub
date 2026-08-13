@@ -456,8 +456,8 @@ export function AirbnbFacultyDashboard({
     });
 
     return (
-      <>
-      <div id="rubric-document-eval" className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000" }}>
+      <div id="official-pbl-rubric-print-area" className="rubric-print-area">
+      <div className="airbnb-card rubric-page-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000" }}>
         {/* Document Institutional Header */}
         <div style={{ textAlign: "center", borderBottom: "2px solid #000000", paddingBottom: "16px", marginBottom: "24px" }}>
           <p style={{ margin: 0, fontSize: "12px", fontStyle: "italic" }}>Srishyla Education Trust ®</p>
@@ -593,7 +593,7 @@ export function AirbnbFacultyDashboard({
       </div>
 
       {/* ===== PAGE 2: Student Marks Allocation, Feedback & Declaration ===== */}
-      <div className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000", marginTop: "32px", pageBreakBefore: "always", breakBefore: "page" as never }}>
+      <div className="airbnb-card rubric-page-card rubric-page-break" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000", marginTop: "32px", pageBreakBefore: "always", breakBefore: "page" as never }}>
         {/* Page 2 Header */}
         <div style={{ textAlign: "center", borderBottom: "2px solid #000000", paddingBottom: "12px", marginBottom: "24px" }}>
           <p style={{ margin: 0, fontSize: "12px", fontStyle: "italic" }}>Srishyla Education Trust ®</p>
@@ -689,45 +689,100 @@ export function AirbnbFacultyDashboard({
 
           <div style={{ borderTop: "2px solid #000", paddingTop: "18px", marginTop: "24px" }}>
             <p style={{ fontSize: "12px", fontStyle: "italic", marginBottom: "20px" }}>
-              I hereby declare that I have conducted the Review 3 presentation of the students, analyzed their progress, and evaluated their performance according to the Coordinator Published Rubric criteria. The marks have been entered as per their performance.
+              I hereby declare that I have conducted the Review 3 presentation of the students, analyzed their progress, and evaluated their performance. The marks have been entered as per their performance in the review.
             </p>
 
-            {/* Guide Details — Editable by Faculty (Vertical Layout) */}
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px", maxWidth: "400px" }}>
-              <div>
-                <label style={{ fontSize: "13px", fontWeight: 800, color: "#1c1e21", display: "block", marginBottom: "4px" }}>Guide Name:</label>
-                <input
-                  type="text"
-                  placeholder="Enter guide name"
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }}
-                />
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "20px", marginBottom: "24px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "360px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Guide Name:</strong>
+                  <input
+                    type="text"
+                    placeholder="Enter guide name"
+                    defaultValue={team.guide_name || ""}
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      borderBottom: "1px dashed #64748b",
+                      outline: "none",
+                      background: "transparent",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#000000",
+                      padding: "2px 4px"
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Designation:</strong>
+                  <input
+                    type="text"
+                    placeholder="Enter designation"
+                    defaultValue="Assistant Professor"
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      borderBottom: "1px dashed #64748b",
+                      outline: "none",
+                      background: "transparent",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#000000",
+                      padding: "2px 4px"
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Department:</strong>
+                  <input
+                    type="text"
+                    placeholder="Enter department"
+                    defaultValue="Computer Science & Engineering"
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      borderBottom: "1px dashed #64748b",
+                      outline: "none",
+                      background: "transparent",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#000000",
+                      padding: "2px 4px"
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Date:</strong>
+                  <input
+                    type="text"
+                    placeholder="dd/mm/yyyy"
+                    defaultValue={new Date().toLocaleDateString("en-IN")}
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      borderBottom: "1px dashed #64748b",
+                      outline: "none",
+                      background: "transparent",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#000000",
+                      padding: "2px 4px"
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                  <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Signature:</strong>
+                  <span style={{ fontSize: "13px", color: "#000000", fontWeight: 700 }}>______________________</span>
+                </div>
               </div>
-              <div>
-                <label style={{ fontSize: "13px", fontWeight: 800, color: "#1c1e21", display: "block", marginBottom: "4px" }}>Designation:</label>
-                <input
-                  type="text"
-                  placeholder="Enter designation"
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: "13px", fontWeight: 800, color: "#1c1e21", display: "block", marginBottom: "4px" }}>Department:</label>
-                <input
-                  type="text"
-                  placeholder="Enter department"
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }}
-                />
-              </div>
-              <div>
-                <label style={{ fontSize: "13px", fontWeight: 800, color: "#1c1e21", display: "block", marginBottom: "4px" }}>Date:</label>
-                <input
-                  type="date"
-                  style={{ width: "100%", padding: "10px 14px", borderRadius: "8px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }}
-                />
+
+              <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between", textAlign: "right" }}>
+                <p style={{ margin: 0 }}><strong>Signature of Faculty Mentor</strong></p>
+                <p style={{ margin: "60px 0 0" }}><strong>Signature of HOD</strong></p>
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: "16px" }}>
               <div>
                 <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 700 }}>Total Final Score Assigned:</span>
                 <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#059669", margin: "2px 0 0" }}>
@@ -746,7 +801,7 @@ export function AirbnbFacultyDashboard({
           </div>
         </form>
       </div>
-      </>
+      </div>
     );
   };
 

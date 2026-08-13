@@ -807,8 +807,8 @@ export function AirbnbCoordinatorDashboard({
 
           {/* MODE A: OFFICIAL GM UNIVERSITY RUBRIC DOCUMENT VIEW */}
           {rubricTab === "viewRubric" && (
-            <>
-            <div id="rubric-document-to-print" className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000" }}>
+            <div id="official-pbl-rubric-print-area" className="rubric-print-area">
+            <div className="airbnb-card rubric-page-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000" }}>
               {/* Document Header */}
               <div style={{ textAlign: "center", borderBottom: "2px solid #000000", paddingBottom: "16px", marginBottom: "24px" }}>
                 <p style={{ margin: 0, fontSize: "12px", fontStyle: "italic" }}>Srishyla Education Trust ®</p>
@@ -898,7 +898,7 @@ export function AirbnbCoordinatorDashboard({
             </div>
 
             {/* ===== PAGE 2: Student Marks Allocation & Declaration ===== */}
-            <div className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000", marginTop: "32px", pageBreakBefore: "always", breakBefore: "page" as never }}>
+            <div className="airbnb-card rubric-page-card rubric-page-break" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000", marginTop: "32px", pageBreakBefore: "always", breakBefore: "page" as never }}>
               {/* Page 2 Header */}
               <div style={{ textAlign: "center", borderBottom: "2px solid #000000", paddingBottom: "12px", marginBottom: "24px" }}>
                 <p style={{ margin: 0, fontSize: "12px", fontStyle: "italic" }}>Srishyla Education Trust ®</p>
@@ -970,24 +970,87 @@ export function AirbnbCoordinatorDashboard({
                 </p>
                 <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "24px", fontSize: "13px", lineHeight: "1.8" }}>
                   {/* Guide Details — Vertical Layout */}
-                  <div style={{ display: "flex", flexDirection: "column", gap: "10px" }}>
-                    <div>
-                      <label style={{ fontSize: "13px", fontWeight: 800, display: "block", marginBottom: "2px" }}>Guide Name:</label>
-                      <input type="text" placeholder="Enter guide name" style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }} />
+                  <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "360px" }}>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Guide Name:</strong>
+                      <input
+                        type="text"
+                        placeholder="Enter guide name"
+                        defaultValue=""
+                        style={{
+                          flex: 1,
+                          border: "none",
+                          borderBottom: "1px dashed #64748b",
+                          outline: "none",
+                          background: "transparent",
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: "#000000",
+                          padding: "2px 4px"
+                        }}
+                      />
                     </div>
-                    <div>
-                      <label style={{ fontSize: "13px", fontWeight: 800, display: "block", marginBottom: "2px" }}>Designation:</label>
-                      <input type="text" placeholder="Enter designation" style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Designation:</strong>
+                      <input
+                        type="text"
+                        placeholder="Enter designation"
+                        defaultValue="Assistant Professor"
+                        style={{
+                          flex: 1,
+                          border: "none",
+                          borderBottom: "1px dashed #64748b",
+                          outline: "none",
+                          background: "transparent",
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: "#000000",
+                          padding: "2px 4px"
+                        }}
+                      />
                     </div>
-                    <div>
-                      <label style={{ fontSize: "13px", fontWeight: 800, display: "block", marginBottom: "2px" }}>Department:</label>
-                      <input type="text" placeholder="Enter department" style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Department:</strong>
+                      <input
+                        type="text"
+                        placeholder="Enter department"
+                        defaultValue="Computer Science & Engineering"
+                        style={{
+                          flex: 1,
+                          border: "none",
+                          borderBottom: "1px dashed #64748b",
+                          outline: "none",
+                          background: "transparent",
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: "#000000",
+                          padding: "2px 4px"
+                        }}
+                      />
                     </div>
-                    <div>
-                      <label style={{ fontSize: "13px", fontWeight: 800, display: "block", marginBottom: "2px" }}>Date:</label>
-                      <input type="date" style={{ width: "100%", padding: "8px 10px", borderRadius: "6px", border: "1px solid #000", fontSize: "13px", fontWeight: 700 }} />
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                      <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Date:</strong>
+                      <input
+                        type="text"
+                        placeholder="dd/mm/yyyy"
+                        defaultValue={new Date().toLocaleDateString("en-IN")}
+                        style={{
+                          flex: 1,
+                          border: "none",
+                          borderBottom: "1px dashed #64748b",
+                          outline: "none",
+                          background: "transparent",
+                          fontSize: "13px",
+                          fontWeight: 700,
+                          color: "#000000",
+                          padding: "2px 4px"
+                        }}
+                      />
                     </div>
-                    <p style={{ margin: "16px 0 0" }}><strong>Signature:</strong> ______________________</p>
+                    <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                      <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Signature:</strong>
+                      <span style={{ fontSize: "13px", color: "#000000", fontWeight: 700 }}>______________________</span>
+                    </div>
                   </div>
                   <div style={{ display: "flex", flexDirection: "column", justifyContent: "space-between" }}>
                     <p style={{ margin: 0 }}><strong>Signature of Faculty Mentor</strong></p>
@@ -996,7 +1059,7 @@ export function AirbnbCoordinatorDashboard({
                 </div>
               </div>
             </div>
-            </>
+            </div>
           )}
 
           {/* MODE B: EDIT / CREATE RUBRICS CRITERIA */}

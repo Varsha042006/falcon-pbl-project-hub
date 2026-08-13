@@ -7,7 +7,7 @@ interface LoginFormProps {
   initialError?: string;
 }
 
-type RoleTab = "STUDENT" | "FACULTY" | "COORDINATOR" | "MENTOR" | "ADMIN";
+type RoleTab = "STUDENT" | "FACULTY" | "COORDINATOR" | "SUPERVISOR" | "MENTOR" | "ADMIN";
 
 export function LoginForm({ initialError }: LoginFormProps) {
   const [activeTab, setActiveTab] = useState<RoleTab>("STUDENT");
@@ -52,6 +52,8 @@ export function LoginForm({ initialError }: LoginFormProps) {
               ? "Invalid Faculty Code or password. Valid Codes: FAC001 to FAC020."
               : activeTab === "COORDINATOR"
               ? "Invalid Coordinator Code or password. Valid Codes: FAC001 to FAC020."
+              : activeTab === "SUPERVISOR"
+              ? "Invalid Supervisor Code or password. Valid Codes: FAC001 to FAC020."
               : activeTab === "MENTOR"
               ? "Invalid Faculty Mentor Code or password. Valid Codes: FAC001 to FAC020."
               : "Invalid Admin Code or password. Valid Code: ADM001."
@@ -72,6 +74,8 @@ export function LoginForm({ initialError }: LoginFormProps) {
             ? "/faculty"
             : activeTab === "COORDINATOR"
             ? "/coordinator"
+            : activeTab === "SUPERVISOR"
+            ? "/supervisor"
             : activeTab === "MENTOR"
             ? "/mentor"
             : "/admin";
@@ -114,6 +118,13 @@ export function LoginForm({ initialError }: LoginFormProps) {
             </div>
           </div>
           <div className="feature-item">
+            <div className="feature-icon">🌐</div>
+            <div>
+              <strong>PBL Supervisor Dashboard</strong>
+              <span>Section Supervision, Student Team Formation & PBL Allocation</span>
+            </div>
+          </div>
+          <div className="feature-item">
             <div className="feature-icon">📋</div>
             <div>
               <strong>PBL Coordinator Dashboard</strong>
@@ -135,46 +146,34 @@ export function LoginForm({ initialError }: LoginFormProps) {
         <div className="insta-card">
           <div className="card-header">
             <div className="insta-logo">Falcon PBL</div>
-            <p className="insta-subtitle">Log in with your USN, Faculty, or Coordinator Code</p>
+            <p className="insta-subtitle">Log in with your USN, Faculty, or Supervisor Code</p>
           </div>
 
-          {/* Role Navigation Tabs */}
-          <div className="role-tabs-header">
-            <button
-              type="button"
-              className={`role-tab-btn ${activeTab === "STUDENT" ? "active" : ""}`}
-              onClick={() => handleTabChange("STUDENT")}
-            >
-              🎓 Student
-            </button>
-            <button
-              type="button"
-              className={`role-tab-btn ${activeTab === "FACULTY" ? "active" : ""}`}
-              onClick={() => handleTabChange("FACULTY")}
-            >
-              👨‍🏫 Faculty
-            </button>
-            <button
-              type="button"
-              className={`role-tab-btn ${activeTab === "COORDINATOR" ? "active" : ""}`}
-              onClick={() => handleTabChange("COORDINATOR")}
-            >
-              📋 Coordinator
-            </button>
-            <button
-              type="button"
-              className={`role-tab-btn ${activeTab === "MENTOR" ? "active" : ""}`}
-              onClick={() => handleTabChange("MENTOR")}
-            >
-              👨‍🏫 Faculty Mentor
-            </button>
-            <button
-              type="button"
-              className={`role-tab-btn ${activeTab === "ADMIN" ? "active" : ""}`}
-              onClick={() => handleTabChange("ADMIN")}
-            >
-              👑 Admin
-            </button>
+          {/* Role Navigation Dropdown */}
+          <div className="role-dropdown-container">
+            <label htmlFor="role-select" className="role-dropdown-label">
+              Select Role / Portal
+            </label>
+            <div className="role-select-wrapper">
+              <select
+                id="role-select"
+                value={activeTab}
+                onChange={(e) => handleTabChange(e.target.value as RoleTab)}
+                className="role-select-dropdown"
+              >
+                <option value="STUDENT">🎓 Student Portal</option>
+                <option value="FACULTY">👨‍🏫 Faculty Portal</option>
+                <option value="SUPERVISOR">🌐 PBL Supervisor Portal</option>
+                <option value="COORDINATOR">📋 PBL Coordinator Portal</option>
+                <option value="MENTOR">👨‍🏫 Faculty Mentor Portal</option>
+                <option value="ADMIN">👑 System Admin Portal</option>
+              </select>
+              <div className="role-select-arrow">
+                <svg width="12" height="8" viewBox="0 0 12 8" fill="none" xmlns="http://www.w3.org/2000/svg">
+                  <path d="M1 1.5L6 6.5L11 1.5" stroke="#65676B" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/>
+                </svg>
+              </div>
+            </div>
           </div>
 
           {error && <div className="fb-error-banner">{error}</div>}
@@ -197,6 +196,8 @@ export function LoginForm({ initialError }: LoginFormProps) {
                   ? "Enter USN (U24E01CS001 - U24E01CS200)"
                   : activeTab === "FACULTY"
                   ? "Enter Faculty Code (FAC001 - FAC020)"
+                  : activeTab === "SUPERVISOR"
+                  ? "Enter Supervisor Code (FAC001 - FAC020)"
                   : activeTab === "COORDINATOR"
                   ? "Enter Coordinator Code (FAC001 - FAC020)"
                   : "Enter Admin Code (ADM001)"}
@@ -236,6 +237,8 @@ export function LoginForm({ initialError }: LoginFormProps) {
                 "Student Log In"
               ) : activeTab === "FACULTY" ? (
                 "Faculty Log In"
+              ) : activeTab === "SUPERVISOR" ? (
+                "Supervisor Log In"
               ) : activeTab === "COORDINATOR" ? (
                 "Coordinator Log In"
               ) : (

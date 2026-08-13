@@ -91,8 +91,10 @@ export function AirbnbMentorDashboard({ displayName, teams: initialTeams }: Airb
           </button>
         </div>
 
-        {/* ===== PAGE 1: Rubrics Matrix & Regulations ===== */}
-        <div id="rubric-document-eval" className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000" }}>
+        <div id="official-pbl-rubric-print-area" className="rubric-print-area">
+          {/* ===== PAGE 1: Rubrics Matrix & Regulations ===== */}
+          <div className="airbnb-card rubric-page-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000" }}>
+          {/* Institutional Header */}
           <div style={{ textAlign: "center", borderBottom: "2px solid #000000", paddingBottom: "16px", marginBottom: "24px" }}>
             <p style={{ margin: 0, fontSize: "12px", fontStyle: "italic" }}>Srishyla Education Trust ®</p>
             <h1 style={{ margin: "4px 0 2px", fontSize: "26px", fontWeight: 900, letterSpacing: "1px", color: "#000000" }}>GM UNIVERSITY</h1>
@@ -102,57 +104,84 @@ export function AirbnbMentorDashboard({ displayName, teams: initialTeams }: Airb
             <p style={{ margin: "2px 0 0", fontSize: "12px", fontWeight: 800, color: "#c62828" }}>SCST B.Tech CSE</p>
           </div>
 
+          {/* Assessment Title */}
           <div style={{ textAlign: "center", marginBottom: "20px" }}>
             <h2 style={{ textDecoration: "underline", fontSize: "18px", fontWeight: 900, margin: "0 0 10px" }}>
               PROJECT-BASED LEARNING (PBL) ASSESSMENT – Review 3
             </h2>
             <p style={{ fontSize: "13px", fontWeight: 800, textTransform: "uppercase", margin: 0 }}>
-              COORDINATOR PUBLISHED RUBRIC ASSESSMENT (TOTAL MARKS: {team.max_marks} MARKS):
+              RUBRIC FOR PROJECT-BASED LEARNING (PBL) ASSESSMENT WITH A TOTAL OF 20 MARKS, CATEGORIZED BASED ON BLOOM&apos;S TAXONOMY:
             </p>
           </div>
 
-          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", fontSize: "13px", fontWeight: 700, marginBottom: "24px", padding: "12px 16px", border: "1px solid #000", background: "#f8fafc" }}>
-            <div><strong>Semester:</strong> {team.semester || 5}th Sem</div>
-            <div><strong>Section:</strong> {team.section_name}</div>
-            <div><strong>Course Code:</strong> UE24CS2406</div>
-            <div><strong>Team Code:</strong> {team.team_code}</div>
-            <div><strong>Project Title:</strong> {team.project_title}</div>
+          {/* Metadata Bar */}
+          <div style={{ display: "flex", justifyContent: "space-between", flexWrap: "wrap", gap: "10px", fontSize: "13px", fontWeight: 700, marginBottom: "24px", padding: "12px 16px", border: "1px solid #000", background: "#ffffff" }}>
+            <div><strong>Semester:</strong> {team.semester || "V"}</div>
+            <div><strong>Sec:</strong> {team.section_name || "5A"}</div>
+            <div><strong>Subcode:</strong> UE24CS2406</div>
+            <div><strong>Project Name:</strong> {team.project_title}</div>
           </div>
 
+          {/* 4-Criteria 20M Rubric Table */}
           <div style={{ overflowX: "auto", marginBottom: "28px" }}>
             <table style={{ width: "100%", borderCollapse: "collapse", border: "1px solid #000", fontSize: "12px" }}>
               <thead>
-                <tr style={{ background: "#f1f5f9", textAlign: "center" }}>
-                  <th style={{ border: "1px solid #000", padding: "10px 6px", width: "45px" }}>CO</th>
-                  <th style={{ border: "1px solid #000", padding: "10px 8px", width: "160px" }}>Criteria</th>
-                  <th style={{ border: "1px solid #000", padding: "10px 6px", width: "50px" }}>Max</th>
-                  <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 5 (9-10M)</th>
-                  <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 4 (7-8M)</th>
-                  <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 3 (5-6M)</th>
-                  <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 2 (3-4M)</th>
-                  <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 1 (1-2M)</th>
+                <tr style={{ background: "#ffffff", textAlign: "center" }}>
+                  <th style={{ border: "1px solid #000", padding: "10px 6px", width: "40px" }}>CO</th>
+                  <th style={{ border: "1px solid #000", padding: "10px 8px", width: "150px" }}>Criteria</th>
+                  <th style={{ border: "1px solid #000", padding: "10px 6px", width: "50px" }}>Marks</th>
+                  <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 5</th>
+                  <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 4</th>
+                  <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 3</th>
+                  <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 2</th>
+                  <th style={{ border: "1px solid #000", padding: "10px 8px" }}>Level 1</th>
+                  <th style={{ border: "1px solid #000", padding: "10px 6px", width: "70px" }}>Obtained Marks</th>
                 </tr>
               </thead>
               <tbody>
                 <tr style={{ textAlign: "left", verticalAlign: "top" }}>
                   <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>CO5</td>
-                  <td style={{ border: "1px solid #000", padding: "10px 8px", fontWeight: 800 }}>System Architecture & Implementation</td>
-                  <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>20</td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Executes exceptional modular architecture (18-20M)</td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Performs thorough implementation (14-17M)</td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Conducts effective basic build (10-13M)</td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Applies partial logic (6-9M)</td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Shows limited prototype (1-5M)</td>
+                  <td style={{ border: "1px solid #000", padding: "10px 8px", fontWeight: 800 }}>Testing &amp; Results</td>
+                  <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>5</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Executes exceptional Testing &amp; Results (5M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Performs thorough Testing &amp; Results (4M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Conducts effective Testing &amp; Results (3M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Applies basic Testing &amp; Results (2M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Shows limited Testing &amp; Results (1M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", textAlign: "center", fontWeight: 800 }}>{Math.round(team.co5_marks / 2)} / 5</td>
+                </tr>
+                <tr style={{ textAlign: "left", verticalAlign: "top" }}>
+                  <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>CO5</td>
+                  <td style={{ border: "1px solid #000", padding: "10px 8px", fontWeight: 800 }}>Results Interpretation &amp; Reporting</td>
+                  <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>5</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Presents outstanding evaluation with comprehensive and clear reporting (5M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Provides detailed evaluation with clear reporting (4M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Demonstrates good evaluation with minor gaps (3M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Illustrates basic evaluation with limited reporting (2M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Displays weak analysis with inadequate reporting (1M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", textAlign: "center", fontWeight: 800 }}>{Math.round(team.co5_marks / 2)} / 5</td>
                 </tr>
                 <tr style={{ textAlign: "left", verticalAlign: "top" }}>
                   <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>CO6</td>
-                  <td style={{ border: "1px solid #000", padding: "10px 8px", fontWeight: 800 }}>Demonstration & Defense</td>
-                  <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>20</td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Fluent defense & live demo (18-20M)</td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Clear explanation of code (14-17M)</td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Satisfactory response to questions (10-13M)</td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Basic presentation (6-9M)</td>
-                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Minimal demo (1-5M)</td>
+                  <td style={{ border: "1px solid #000", padding: "10px 8px", fontWeight: 800 }}>System Demonstration &amp; Functionality</td>
+                  <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>5</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Showcases excellent demonstration with flawless functionality (5M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Exhibits complete demonstration with seamless functionality (4M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Demonstrates effective functionality with minor issues (3M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Reveals partial demonstration with limited functionality (2M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Indicates incomplete demonstration with significant issues (1M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", textAlign: "center", fontWeight: 800 }}>{Math.round(team.co6_marks / 2)} / 5</td>
+                </tr>
+                <tr style={{ textAlign: "left", verticalAlign: "top" }}>
+                  <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>CO6</td>
+                  <td style={{ border: "1px solid #000", padding: "10px 8px", fontWeight: 800 }}>Project Significance &amp; Future Scope</td>
+                  <td style={{ border: "1px solid #000", padding: "10px 6px", textAlign: "center", fontWeight: 800 }}>5</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Establishes exceptional impact assessment with innovative future scope (5M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Highlights strong impact assessment with clear future scope (4M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Explains good impact assessment with minor gaps (3M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Discusses basic impact assessment with limited future scope (2M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", fontSize: "11px" }}>Mentions minimal impact evaluation (1M)</td>
+                  <td style={{ border: "1px solid #000", padding: "8px", textAlign: "center", fontWeight: 800 }}>{Math.round(team.co6_marks / 2)} / 5</td>
                 </tr>
               </tbody>
             </table>
@@ -162,17 +191,17 @@ export function AirbnbMentorDashboard({ displayName, teams: initialTeams }: Airb
             <strong>Note:</strong>
             <ol style={{ margin: "4px 0 0", paddingLeft: "20px" }}>
               <li>Students who have not met the guides regularly will be awarded <strong>zero marks</strong>.</li>
-              <li>Students who do not present their project progress according to the format or miss presentation will be awarded <strong>zero marks</strong>.</li>
+              <li>Students who do not present their project progress according to the format or those who miss the presentation will be awarded <strong>zero marks</strong>.</li>
             </ol>
           </div>
         </div>
 
-        {/* ===== PAGE 2: Student Marks Allocation, Remarks & Signatures ===== */}
-        <div className="airbnb-card" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000", marginTop: "32px", pageBreakBefore: "always", breakBefore: "page" as never }}>
+        {/* ===== PAGE 2: Student Marks Allocation & Declaration ===== */}
+        <div className="airbnb-card rubric-page-card rubric-page-break" style={{ padding: "40px", background: "#ffffff", border: "2px solid #1c1e21", borderRadius: "8px", color: "#000000", marginTop: "32px", pageBreakBefore: "always", breakBefore: "page" as never }}>
           <div style={{ textAlign: "center", borderBottom: "2px solid #000000", paddingBottom: "12px", marginBottom: "24px" }}>
             <p style={{ margin: 0, fontSize: "12px", fontStyle: "italic" }}>Srishyla Education Trust ®</p>
             <h2 style={{ margin: "4px 0 2px", fontSize: "20px", fontWeight: 900, letterSpacing: "1px", color: "#000000" }}>GM UNIVERSITY</h2>
-            <p style={{ margin: "4px 0 0", fontSize: "13px", fontWeight: 800, textTransform: "uppercase" }}>PBL ASSESSMENT – Review 3 (Page 2: Student Marks & Declaration)</p>
+            <p style={{ margin: "4px 0 0", fontSize: "13px", fontWeight: 800, textTransform: "uppercase" }}>PBL ASSESSMENT – REVIEW 3 (PAGE 2: STUDENT MARKS &amp; DECLARATION)</p>
           </div>
 
           <div style={{ marginBottom: "28px" }}>
@@ -184,8 +213,8 @@ export function AirbnbMentorDashboard({ displayName, teams: initialTeams }: Airb
                 <tr style={{ textAlign: "center" }}>
                   <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>Student Name</th>
                   <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>USN</th>
-                  <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>CO5 (20 Marks)</th>
-                  <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>CO6 (20 Marks)</th>
+                  <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>CO5 (10 Marks)</th>
+                  <th style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800 }}>CO6 (10 Marks)</th>
                 </tr>
               </thead>
               <tbody>
@@ -195,16 +224,16 @@ export function AirbnbMentorDashboard({ displayName, teams: initialTeams }: Airb
                   return (
                     <tr key={idx} style={{ textAlign: "center" }}>
                       <td style={{ border: "1px solid #000", padding: "10px 12px", textAlign: "left", fontWeight: 700 }}>
-                        {studentName || "—"}
+                        {studentName || "Enter student name"}
                       </td>
                       <td style={{ border: "1px solid #000", padding: "10px 12px", fontFamily: "monospace", fontWeight: 700 }}>
-                        {usn || "—"}
+                        {usn || "Enter USN"}
                       </td>
                       <td style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800, color: "#1d4ed8" }}>
-                        {usn ? `${team.co5_marks} Marks` : "—"}
+                        {usn ? `${Math.round(team.co5_marks / 2)}` : "0"}
                       </td>
                       <td style={{ border: "1px solid #000", padding: "10px 12px", fontWeight: 800, color: "#0f766e" }}>
-                        {usn ? `${team.co6_marks} Marks` : "—"}
+                        {usn ? `${Math.round(team.co6_marks / 2)}` : "0"}
                       </td>
                     </tr>
                   );
@@ -216,8 +245,30 @@ export function AirbnbMentorDashboard({ displayName, teams: initialTeams }: Airb
           {/* Remarks Section */}
           <div style={{ marginBottom: "24px" }}>
             <label style={{ fontSize: "14px", fontWeight: 800, display: "block", marginBottom: "6px" }}>
-              Faculty Guide & Mentor Assessment Feedback Remarks:
+              Faculty Guide &amp; Mentor Assessment Feedback Remarks:
             </label>
+            <div className="no-print" style={{ marginBottom: "10px" }}>
+              <textarea
+                rows={3}
+                defaultValue={team.mentor_remarks}
+                placeholder="Enter mentor remarks for this team evaluation..."
+                style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #000", fontSize: "13px", fontFamily: "inherit" }}
+                onBlur={(e) => handleSaveRemarks(team.id, e.target.value)}
+              />
+              <div style={{ display: "flex", justifyContent: "flex-end", marginTop: "6px" }}>
+                <button
+                  type="button"
+                  className="btn-primary-pill"
+                  style={{ padding: "6px 16px", fontSize: "12px", background: "#3b82f6", fontWeight: 800 }}
+                  onClick={() => {
+                    const el = document.querySelector(`textarea[placeholder="Enter mentor remarks for this team evaluation..."]`) as HTMLTextAreaElement;
+                    if (el) handleSaveRemarks(team.id, el.value);
+                  }}
+                >
+                  💾 Save Remarks
+                </button>
+              </div>
+            </div>
             <div style={{ padding: "12px 14px", borderRadius: "8px", border: "1px solid #000", fontSize: "13px", background: "#fafafa" }}>
               {team.mentor_remarks || "No remarks entered."}
             </div>
@@ -225,40 +276,177 @@ export function AirbnbMentorDashboard({ displayName, teams: initialTeams }: Airb
 
           <div style={{ borderTop: "2px solid #000", paddingTop: "18px", marginTop: "24px" }}>
             <p style={{ fontSize: "12px", fontStyle: "italic", marginBottom: "20px" }}>
-              I hereby declare that I have conducted the Review 3 presentation of the students, analyzed their progress, and evaluated their performance according to the Coordinator Published Rubric criteria.
+              I hereby declare that I have conducted the Review 3 presentation of the students, analyzed their progress, and evaluated their performance. The marks have been entered as per their performance in the review.
             </p>
 
-            <div style={{ display: "flex", flexDirection: "column", gap: "12px", marginBottom: "24px", maxWidth: "400px" }}>
-              <div>
-                <strong style={{ fontSize: "13px" }}>Guide Name:</strong> {team.guide_name}
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "flex-start", flexWrap: "wrap", gap: "20px", marginBottom: "24px" }}>
+              <div style={{ display: "flex", flexDirection: "column", gap: "8px", width: "360px" }}>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Guide Name:</strong>
+                  <input
+                    type="text"
+                    placeholder="Enter guide name"
+                    defaultValue={team.guide_name || ""}
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      borderBottom: "1px dashed #64748b",
+                      outline: "none",
+                      background: "transparent",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#000000",
+                      padding: "2px 4px"
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Designation:</strong>
+                  <input
+                    type="text"
+                    placeholder="Enter designation"
+                    defaultValue="Assistant Professor"
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      borderBottom: "1px dashed #64748b",
+                      outline: "none",
+                      background: "transparent",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#000000",
+                      padding: "2px 4px"
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Department:</strong>
+                  <input
+                    type="text"
+                    placeholder="Enter department"
+                    defaultValue="Computer Science & Engineering"
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      borderBottom: "1px dashed #64748b",
+                      outline: "none",
+                      background: "transparent",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#000000",
+                      padding: "2px 4px"
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px" }}>
+                  <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Date:</strong>
+                  <input
+                    type="text"
+                    placeholder="dd/mm/yyyy"
+                    defaultValue={new Date().toLocaleDateString("en-IN")}
+                    style={{
+                      flex: 1,
+                      border: "none",
+                      borderBottom: "1px dashed #64748b",
+                      outline: "none",
+                      background: "transparent",
+                      fontSize: "13px",
+                      fontWeight: 700,
+                      color: "#000000",
+                      padding: "2px 4px"
+                    }}
+                  />
+                </div>
+                <div style={{ display: "flex", alignItems: "center", gap: "8px", marginTop: "4px" }}>
+                  <strong style={{ fontSize: "13px", color: "#000000", whiteSpace: "nowrap" }}>Signature:</strong>
+                  <span style={{ fontSize: "13px", color: "#000000", fontWeight: 700 }}>______________________</span>
+                </div>
               </div>
-              <div>
-                <strong style={{ fontSize: "13px" }}>Faculty Mentor Signature:</strong> {team.mentor_signature || "______________________"}
-              </div>
-              <div>
-                <strong style={{ fontSize: "13px" }}>Evaluation Status:</strong>{" "}
-                <span className="legend-item" style={{
-                  background: team.evaluation_status === "APPROVED" ? "#dcfce7" : "#fef9c3",
-                  color: team.evaluation_status === "APPROVED" ? "#0f8a5f" : "#a16207",
-                  fontWeight: 800,
-                }}>
-                  {team.evaluation_status}
-                </span>
+
+              <div style={{ display: "flex", flexDirection: "column", gap: "20px", textAlign: "right" }}>
+                <div>
+                  <strong style={{ fontSize: "13px", display: "block", marginBottom: "4px" }}>Signature of Faculty Mentor:</strong>
+                  {team.mentor_signature ? (
+                    <span style={{ fontSize: "14px", fontWeight: 800, color: "#0f8a5f" }}>
+                      ✍️ {team.mentor_signature} (Verified)
+                    </span>
+                  ) : (
+                    <div>
+                      <span style={{ color: "#dc2626", fontStyle: "italic", fontSize: "12px", display: "block", marginBottom: "6px" }}>
+                        Not signed yet.
+                      </span>
+                      <div className="no-print" style={{ display: "flex", gap: "8px", justifyContent: "flex-end" }}>
+                        <input
+                          id={`sig-rubric-${team.id}`}
+                          type="text"
+                          placeholder={`e.g. ${displayName}`}
+                          style={{ padding: "6px 10px", borderRadius: "6px", border: "1px solid #000", fontSize: "13px", fontWeight: 700, fontStyle: "italic", width: "160px" }}
+                        />
+                        <button
+                          type="button"
+                          className="btn-primary-pill"
+                          style={{ padding: "6px 14px", fontSize: "12px", background: "linear-gradient(135deg, #7c3aed, #a855f7)", fontWeight: 800 }}
+                          onClick={() => {
+                            const input = document.getElementById(`sig-rubric-${team.id}`) as HTMLInputElement;
+                            if (input?.value.trim()) handleSignature(team.id, input.value.trim());
+                          }}
+                        >
+                          Sign &amp; Lock
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                <div style={{ marginTop: "12px" }}>
+                  <strong style={{ fontSize: "13px", display: "block" }}>Signature of HOD</strong>
+                  <span style={{ fontSize: "12px", color: "#64748b" }}>______________________</span>
+                </div>
+
+                <div>
+                  <strong style={{ fontSize: "13px" }}>Evaluation Status:</strong>{" "}
+                  <span className="legend-item" style={{
+                    background: team.evaluation_status === "APPROVED" ? "#dcfce7" : team.evaluation_status === "REJECTED" ? "#fee2e2" : "#fef9c3",
+                    color: team.evaluation_status === "APPROVED" ? "#0f8a5f" : team.evaluation_status === "REJECTED" ? "#dc2626" : "#a16207",
+                    fontWeight: 800,
+                  }}>
+                    {team.evaluation_status}
+                  </span>
+                  <div className="no-print" style={{ display: "flex", gap: "8px", marginTop: "8px", justifyContent: "flex-end" }}>
+                    <button
+                      type="button"
+                      className="btn-primary-pill"
+                      style={{ padding: "6px 14px", fontSize: "12px", background: "#10b981", fontWeight: 800 }}
+                      onClick={() => handleApprove(team.id)}
+                    >
+                      ✅ Approve
+                    </button>
+                    <button
+                      type="button"
+                      className="btn-primary-pill"
+                      style={{ padding: "6px 14px", fontSize: "12px", background: "#ef4444", fontWeight: 800 }}
+                      onClick={() => handleReject(team.id)}
+                    >
+                      ❌ Reject
+                    </button>
+                  </div>
+                </div>
               </div>
             </div>
 
-            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center" }}>
+            <div style={{ display: "flex", justifyContent: "space-between", alignItems: "center", borderTop: "1px solid #e2e8f0", paddingTop: "12px" }}>
               <div>
                 <span style={{ fontSize: "12px", color: "#64748b", fontWeight: 700 }}>Total Final Score Assigned:</span>
                 <h2 style={{ fontSize: "28px", fontWeight: 900, color: "#059669", margin: "2px 0 0" }}>
-                  {team.total_marks} / {team.max_marks} Marks
+                  {Math.round(team.total_marks / 2)} / 20 Marks
                 </h2>
               </div>
             </div>
           </div>
         </div>
       </div>
-    );
+    </div>
+  );
   };
 
   return (
@@ -407,62 +595,7 @@ export function AirbnbMentorDashboard({ displayName, teams: initialTeams }: Airb
             </div>
           </div>
 
-          {/* Quick Actions Grid matching the image */}
-          <div className="airbnb-card vertical-actions-section">
-            <div className="timeline-header" style={{ marginBottom: "24px" }}>
-              <div>
-                <h2 className="timeline-title">⚡ Faculty Mentor Quick Actions</h2>
-                <p className="timeline-desc">Select a feature below to manage mentee team evaluations across all projects.</p>
-              </div>
-            </div>
 
-            <div className="vertical-actions-grid">
-              <div className="vertical-action-card coral-theme" onClick={() => setCurrentView("reviewMarks")}>
-                <div className="action-icon-box coral">📊</div>
-                <div className="action-text-box">
-                  <div className="action-card-title">Review Marks</div>
-                  <div className="action-card-sub">View and review marks submitted by faculty guides</div>
-                </div>
-                <div className="action-arrow">→</div>
-              </div>
-
-              <div className="vertical-action-card green-theme" onClick={() => setCurrentView("approveReject")}>
-                <div className="action-icon-box green">✅</div>
-                <div className="action-text-box">
-                  <div className="action-card-title">Approve / Reject</div>
-                  <div className="action-card-sub">Approve or reject submitted marks and evaluations</div>
-                </div>
-                <div className="action-arrow">→</div>
-              </div>
-
-              <div className="vertical-action-card blue-theme" onClick={() => setCurrentView("addRemarks")}>
-                <div className="action-icon-box blue">💬</div>
-                <div className="action-text-box">
-                  <div className="action-card-title">Add Remarks</div>
-                  <div className="action-card-sub">Add mentor-specific remarks and feedback for teams</div>
-                </div>
-                <div className="action-arrow">→</div>
-              </div>
-
-              <div className="vertical-action-card dark-theme" onClick={() => setCurrentView("digitalSignature")}>
-                <div className="action-icon-box dark">✍️</div>
-                <div className="action-text-box">
-                  <div className="action-card-title">Digital Signature</div>
-                  <div className="action-card-sub">Sign and lock evaluations with your digital signature</div>
-                </div>
-                <div className="action-arrow">→</div>
-              </div>
-
-              <div className="vertical-action-card" style={{ borderLeft: "4px solid #8b5cf6" }} onClick={() => setCurrentView("teamReports")}>
-                <div className="action-icon-box" style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>📄</div>
-                <div className="action-text-box">
-                  <div className="action-card-title">Team Reports</div>
-                  <div className="action-card-sub">View summary reports for all assigned mentee teams</div>
-                </div>
-                <div className="action-arrow">→</div>
-              </div>
-            </div>
-          </div>
         </div>
       )}
 
@@ -476,155 +609,7 @@ export function AirbnbMentorDashboard({ displayName, teams: initialTeams }: Airb
             </p>
           </div>
 
-          {/* Mode Switcher Tabs */}
-          <div style={{ display: "flex", gap: "12px", marginBottom: "24px" }} className="no-print">
-            <button
-              className={`btn-secondary-pill ${workspaceTab === "actions" ? "active" : ""}`}
-              style={{
-                background: workspaceTab === "actions" ? "var(--airbnb-dark)" : "#ffffff",
-                color: workspaceTab === "actions" ? "#ffffff" : "var(--airbnb-dark)",
-                borderColor: "var(--airbnb-dark)",
-                fontWeight: 800,
-                padding: "10px 24px"
-              }}
-              onClick={() => setWorkspaceTab("actions")}
-            >
-              ⚡ Team Actions Hub
-            </button>
-            <button
-              className={`btn-secondary-pill ${workspaceTab === "rubricDoc" ? "active" : ""}`}
-              style={{
-                background: workspaceTab === "rubricDoc" ? "var(--airbnb-dark)" : "#ffffff",
-                color: workspaceTab === "rubricDoc" ? "#ffffff" : "var(--airbnb-dark)",
-                borderColor: "var(--airbnb-dark)",
-                fontWeight: 800,
-                padding: "10px 24px"
-              }}
-              onClick={() => setWorkspaceTab("rubricDoc")}
-            >
-              📜 View Official 2-Page Rubric Report
-            </button>
-          </div>
-
-          {workspaceTab === "actions" ? (
-            <div>
-              {/* 5 Actions Grid for Selected Team */}
-              <div className="vertical-actions-grid" style={{ marginBottom: "28px" }}>
-                <div className="vertical-action-card coral-theme" onClick={() => setCurrentView("reviewMarks")}>
-                  <div className="action-icon-box coral">📊</div>
-                  <div className="action-text-box">
-                    <div className="action-card-title">Review Marks</div>
-                    <div className="action-card-sub">CO5: {selectedTeam.co5_marks}/20 • CO6: {selectedTeam.co6_marks}/20 • Total: {selectedTeam.total_marks}/40</div>
-                  </div>
-                  <div className="action-arrow">→</div>
-                </div>
-
-                <div className="vertical-action-card green-theme" onClick={() => setCurrentView("approveReject")}>
-                  <div className="action-icon-box green">✅</div>
-                  <div className="action-text-box">
-                    <div className="action-card-title">Approve / Reject</div>
-                    <div className="action-card-sub">Current Status: {selectedTeam.evaluation_status}</div>
-                  </div>
-                  <div className="action-arrow">→</div>
-                </div>
-
-                <div className="vertical-action-card blue-theme" onClick={() => setCurrentView("addRemarks")}>
-                  <div className="action-icon-box blue">💬</div>
-                  <div className="action-text-box">
-                    <div className="action-card-title">Add Remarks</div>
-                    <div className="action-card-sub">{selectedTeam.mentor_remarks ? `Remarks: ${selectedTeam.mentor_remarks}` : "Add mentor feedback"}</div>
-                  </div>
-                  <div className="action-arrow">→</div>
-                </div>
-
-                <div className="vertical-action-card dark-theme" onClick={() => setCurrentView("digitalSignature")}>
-                  <div className="action-icon-box dark">✍️</div>
-                  <div className="action-text-box">
-                    <div className="action-card-title">Digital Signature</div>
-                    <div className="action-card-sub">{selectedTeam.mentor_signature ? `Signed: ${selectedTeam.mentor_signature}` : "Sign & lock evaluation"}</div>
-                  </div>
-                  <div className="action-arrow">→</div>
-                </div>
-
-                <div className="vertical-action-card" style={{ borderLeft: "4px solid #8b5cf6" }} onClick={() => setWorkspaceTab("rubricDoc")}>
-                  <div className="action-icon-box" style={{ background: "linear-gradient(135deg, #7c3aed, #a855f7)" }}>📄</div>
-                  <div className="action-text-box">
-                    <div className="action-card-title">Team Reports</div>
-                    <div className="action-card-sub">View full 2-page rubric document & print PDF</div>
-                  </div>
-                  <div className="action-arrow">→</div>
-                </div>
-              </div>
-
-              {/* In-Line Evaluation Card for Quick Review */}
-              <div className="airbnb-card">
-                <h3 style={{ margin: "0 0 16px", fontSize: "16px", fontWeight: 800 }}>⚡ Quick Actions for {selectedTeam.team_name}</h3>
-                
-                <div style={{ display: "grid", gridTemplateColumns: "1fr 1fr", gap: "20px", marginBottom: "20px" }}>
-                  <div>
-                    <label style={{ fontSize: "13px", fontWeight: 800, display: "block", marginBottom: "6px" }}>Mentor Feedback & Remarks:</label>
-                    <textarea
-                      rows={3}
-                      defaultValue={selectedTeam.mentor_remarks}
-                      placeholder="Enter mentor remarks..."
-                      style={{ width: "100%", padding: "10px 12px", borderRadius: "8px", border: "1px solid #cbd5e1", fontSize: "13px" }}
-                      onBlur={(e) => handleSaveRemarks(selectedTeam.id, e.target.value)}
-                    />
-                  </div>
-
-                  <div>
-                    <label style={{ fontSize: "13px", fontWeight: 800, display: "block", marginBottom: "6px" }}>Digital Signature:</label>
-                    {selectedTeam.mentor_signature ? (
-                      <div style={{ padding: "10px 14px", background: "#f0fdf4", borderRadius: "8px", border: "1px solid #bbf7d0", color: "#0f8a5f", fontSize: "13px", fontWeight: 700 }}>
-                        ✍️ Signed by: {selectedTeam.mentor_signature}
-                      </div>
-                    ) : (
-                      <div style={{ display: "flex", gap: "10px" }}>
-                        <input
-                          id={`sig-quick-${selectedTeam.id}`}
-                          type="text"
-                          placeholder={`e.g. ${displayName}`}
-                          style={{ flex: 1, padding: "10px 12px", borderRadius: "8px", border: "1px solid #7c3aed", fontSize: "14px", fontWeight: 700 }}
-                        />
-                        <button
-                          type="button"
-                          className="btn-primary-pill"
-                          style={{ padding: "10px 18px", fontSize: "12px", background: "#7c3aed", fontWeight: 800 }}
-                          onClick={() => {
-                            const input = document.getElementById(`sig-quick-${selectedTeam.id}`) as HTMLInputElement;
-                            if (input?.value.trim()) handleSignature(selectedTeam.id, input.value.trim());
-                          }}
-                        >
-                          Sign & Lock
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                </div>
-
-                <div style={{ display: "flex", gap: "12px", justifyContent: "flex-end" }}>
-                  <button
-                    type="button"
-                    className="btn-primary-pill"
-                    style={{ padding: "10px 24px", fontSize: "13px", background: "#10b981", fontWeight: 800 }}
-                    onClick={() => handleApprove(selectedTeam.id)}
-                  >
-                    ✅ Approve Evaluation
-                  </button>
-                  <button
-                    type="button"
-                    className="btn-primary-pill"
-                    style={{ padding: "10px 24px", fontSize: "13px", background: "#ef4444", fontWeight: 800 }}
-                    onClick={() => handleReject(selectedTeam.id)}
-                  >
-                    ❌ Reject Evaluation
-                  </button>
-                </div>
-              </div>
-            </div>
-          ) : (
-            renderOfficialRubricDocument(selectedTeam)
-          )}
+          {renderOfficialRubricDocument(selectedTeam)}
         </div>
       )}
 
